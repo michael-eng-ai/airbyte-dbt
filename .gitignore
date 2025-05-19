@@ -1,0 +1,58 @@
+# Arquivos de ambiente e segredos
+.env
+*.env
+
+# Diretórios de logs
+logs/
+*.log
+
+# Diretórios de cache e arquivos temporários
+.DS_Store
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Diretórios do dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# Arquivos específicos do airflow
+airflow_dags/__pycache__/
+airflow_dags/*.pyc
+airflow_dags/.airflowignore
+
+# Arquivos de editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Arquivos de testes
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Arquivos de chaves e configurações de desenvolvimento
+*.pem
+*.key
+dev_config.yml

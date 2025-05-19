@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: agg_valor_pedidos_por_cliente_mensal
+    description: >
+      Agregação mensal dos valores de pedidos por cliente.
+      Pronto para consumo por ferramentas de BI e dashboards.
+    columns:
+      - name: cliente_id
+        description: Identificador único do cliente
+      - name: nome_cliente
+        description: Nome do cliente
+      - name: ano_pedido
+        description: Ano do pedido
+      - name: mes_pedido
+        description: Mês do pedido
+      - name: valor_total_pedidos_mensal
+        description: Soma total do valor dos pedidos no mês
+        tests:
+          - not_null
+      - name: numero_de_pedidos_mensal
+        description: Número de pedidos distintos no mês
+        
+  - name: gold_visao_geral_clientes
+    description: >
+      Visão consolidada dos clientes com métricas de compras e segmentação.
+      Pronto para consumo em painéis gerenciais e análises de negócio.
+    columns:
+      - name: cliente_id_origem
+        description: Identificador único do cliente na origem
+        tests:
+          - unique
+          - not_null
+      - name: nome_completo
+        description: Nome completo do cliente
+      - name: email_padronizado
+        description: Email padronizado
+      - name: data_cadastro_ts
+        description: Data e hora de cadastro
+      - name: ultima_atualizacao_cliente_ts
+        description: Data e hora da última atualização
+      - name: dominio_email
+        description: Domínio de email
+      - name: ano_cadastro
+        description: Ano de cadastro
+      - name: total_pedidos_realizados
+        description: Total de pedidos feitos pelo cliente
+      - name: valor_total_gasto_cliente
+        description: Valor total gasto pelo cliente
+      - name: data_primeiro_pedido
+        description: Data do primeiro pedido do cliente
+      - name: data_ultimo_pedido
+        description: Data do último pedido do cliente
+      - name: segmento_cliente
+        description: Segmentação do cliente baseada no número de pedidos

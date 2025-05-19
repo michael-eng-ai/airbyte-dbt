@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: bronze_clientes
+    description: >
+      Modelo bronze para clientes. Contém todas as colunas dos dados brutos,
+      incluindo metadados Airbyte, sem transformações significativas.
+    columns:
+      - name: id
+        description: Identificador único do cliente
+        tests:
+          - unique
+          - not_null
+      - name: nome
+        description: Nome completo do cliente
+      - name: email
+        description: Email de contato do cliente
+      - name: data_cadastro
+        description: Data e hora de cadastro do cliente
+      - name: ultima_atualizacao
+        description: Data e hora da última atualização dos dados do cliente
+      - name: _airbyte_ab_id
+        description: Identificador interno do Airbyte para rastreamento de registros
+      - name: _airbyte_emitted_at
+        description: Data e hora em que o registro foi emitido pelo Airbyte
+      - name: _airbyte_normalized_at
+        description: Data e hora em que o registro foi normalizado pelo Airbyte
+      - name: _airbyte_clientes_hashid
+        description: Hash ID gerado pelo Airbyte para a tabela de clientes
+
+  - name: bronze_pedidos
+    description: >
+      Modelo bronze para pedidos. Contém todas as colunas dos dados brutos,
+      incluindo metadados Airbyte, sem transformações significativas.
+    columns:
+      - name: id
+        description: Identificador único do pedido
+        tests:
+          - unique
+          - not_null
+      - name: cliente_id
+        description: Identificador do cliente que fez o pedido
+      - name: produto
+        description: Nome do produto adquirido
+      - name: quantidade
+        description: Quantidade do produto adquirida
+      - name: preco_unitario
+        description: Preço unitário do produto no momento do pedido
+      - name: data_pedido
+        description: Data e hora em que o pedido foi registrado
+      - name: ultima_atualizacao
+        description: Data e hora da última atualização dos dados do pedido
+      - name: _airbyte_ab_id
+        description: Identificador interno do Airbyte para rastreamento de registros
+      - name: _airbyte_emitted_at
+        description: Data e hora em que o registro foi emitido pelo Airbyte
+      - name: _airbyte_normalized_at
+        description: Data e hora em que o registro foi normalizado pelo Airbyte
+      - name: _airbyte_pedidos_hashid
+        description: Hash ID gerado pelo Airbyte para a tabela de pedidos

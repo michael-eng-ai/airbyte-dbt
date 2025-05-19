@@ -1,0 +1,8 @@
+apache-airflow-providers-http>=2.0.1
+apache-airflow-providers-postgres>=5.0.0
+requests>=2.27.1
+sqlalchemy>=1.4.0
+dbt-postgres>=1.5.0
+dbt-core>=1.5.0
+pyairbyte>=0.1.9
+apache-airflow-providers-airbyte>=3.0.0

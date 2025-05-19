@@ -1,0 +1,43 @@
+version: 2
+
+sources:
+  - name: airbyte_raw_data # Nome da sua fonte no Airbyte (geralmente o nome do schema criado pelo Airbyte)
+    # Opcional: adicione uma descrição para sua fonte
+    description: "Dados brutos replicados do PostgreSQL de origem via Airbyte."
+    # Opcional: adicione o nome do banco de dados se não for o padrão do seu profile
+    # database: your_raw_database
+    # Opcional: adicione o schema onde o Airbyte materializa os dados
+    schema: public # ou outro schema configurado no Airbyte como destino
+
+    # Defina as tabelas que você espera do Airbyte
+    # O nome da tabela aqui deve corresponder ao nome da tabela no seu banco de dados de origem
+    # O Airbyte pode adicionar um prefixo ou sufixo, verifique a sua configuração.
+    # Por padrão, o Airbyte cria tabelas no schema 'public' (ou o schema da sua source) 
+    # dentro do schema de destino que você configurou no Airbyte (ex: airbyte_raw_data.public_clientes)
+    # Ajuste 'identifier' conforme o nome real da tabela criada pelo Airbyte.
+    tables:
+      - name: clientes
+        description: "Tabela de clientes brutos replicada do sistema de origem."
+        # Opcional: defina colunas para documentação ou testes
+        # columns:
+        #   - name: id
+        #     description: "Chave primária do cliente."
+        #     tests:
+        #       - unique
+        #       - not_null
+
+      - name: pedidos
+        description: "Tabela de pedidos brutos replicada do sistema de origem."
+        # columns:
+        #   - name: id
+        #     description: "Chave primária do pedido."
+        #     tests:
+        #       - unique
+        #       - not_null
+        #   - name: cliente_id
+        #     description: "Chave estrangeira para a tabela de clientes."
+        #     tests:
+        #       - not_null
+        #       - relationships:
+        #           to: source('airbyte_raw_data', 'clientes')
+        #           field: id
