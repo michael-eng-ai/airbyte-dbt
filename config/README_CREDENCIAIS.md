@@ -46,7 +46,7 @@ Database: db_target
 
 ### 🔄 Airbyte (CDC Engine)
 ```
-UI: http://localhost:8001
+UI: http://localhost:8080
 Usuário: admin (default no Airbyte)
 Senha: admin (default no Airbyte)
 ```

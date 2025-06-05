@@ -26,7 +26,7 @@ Senha: admin
 ```
 
 ### 2️⃣ **Configurar Airbyte CDC (Manual)**
-1. Abra http://localhost:8001
+1. Abra http://localhost:8080
 2. Configure Source: PostgreSQL `localhost:5430` (admin/admin)
 3. Configure Target: PostgreSQL `localhost:5431` (admin/admin)
 4. Ative CDC para tabelas: `clientes`, `pedidos`, `produtos`, `leads`
@@ -86,7 +86,7 @@ python3 scripts/executar_dbt.py full     # Pipeline completo
 
 | Serviço | URL | Credenciais |
 |---------|-----|-------------|
-| **Airbyte UI** | http://localhost:8001 | admin/admin |
+| **Airbyte UI** | http://localhost:8080 | admin/admin |
 | **MinIO Console** | http://localhost:9001 | admin/admin |
 | **PostgreSQL Source** | localhost:5430 | admin/admin |
 | **PostgreSQL Target** | localhost:5431 | admin/admin |
@@ -168,7 +168,7 @@ docker compose exec postgres_target psql -U admin -d db_target -c "SELECT COUNT(
 ### **Problema: Portas ocupadas**
 ```bash
 # Verificar portas em uso
-lsof -i :5430 -i :5431 -i :8001 -i :9001
+lsof -i :5430 -i :5431 -i :8001 -i :8080 -i :9001
 
 # Matar processos se necessário
 killall postgres
