@@ -36,8 +36,8 @@ AIRBYTE_SYNC_TIMEOUT = int(os.environ.get("AIRBYTE_SYNC_TIMEOUT", "3600"))
 # Credenciais do banco de dados
 DB_HOST = os.environ.get("DB_HOST", "postgres_source_db")
 DB_PORT = os.environ.get("DB_PORT", "5432")
-DB_USER = os.environ.get("DB_USER", "user_source")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "password_source")
+DB_USER = os.environ.get("DB_USER", "admin")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "admin")
 DB_NAME = os.environ.get("DB_NAME", "db_source")
 
 with DAG(

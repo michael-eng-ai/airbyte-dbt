@@ -5,6 +5,8 @@
 # Diretórios de logs
 logs/
 *.log
+dashboard.log
+insersor.log
 
 # Diretórios de cache e arquivos temporários
 .DS_Store
@@ -14,6 +16,8 @@ __pycache__/
 *.so
 .Python
 env/
+venv/
+ENV/
 build/
 develop-eggs/
 dist/
@@ -25,6 +29,7 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -56,3 +61,9 @@ htmlcov/
 *.pem
 *.key
 dev_config.yml
+
+# Docker
+.env
+
+# OS
+Thumbs.db

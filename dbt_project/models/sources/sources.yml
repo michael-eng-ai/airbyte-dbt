@@ -1,43 +1,293 @@
 version: 2
 
 sources:
-  - name: airbyte_raw_data # Nome da sua fonte no Airbyte (geralmente o nome do schema criado pelo Airbyte)
-    # Opcional: adicione uma descrição para sua fonte
-    description: "Dados brutos replicados do PostgreSQL de origem via Airbyte."
-    # Opcional: adicione o nome do banco de dados se não for o padrão do seu profile
-    # database: your_raw_database
-    # Opcional: adicione o schema onde o Airbyte materializa os dados
-    schema: public # ou outro schema configurado no Airbyte como destino
-
-    # Defina as tabelas que você espera do Airbyte
-    # O nome da tabela aqui deve corresponder ao nome da tabela no seu banco de dados de origem
-    # O Airbyte pode adicionar um prefixo ou sufixo, verifique a sua configuração.
-    # Por padrão, o Airbyte cria tabelas no schema 'public' (ou o schema da sua source) 
-    # dentro do schema de destino que você configurou no Airbyte (ex: airbyte_raw_data.public_clientes)
-    # Ajuste 'identifier' conforme o nome real da tabela criada pelo Airbyte.
+  - name: raw_data
+    description: "Dados brutos - origem dinâmica baseada no estado do pipeline"
+    database: "{{ var('source_database', 'db_source') }}"  # Dinâmico: db_source ou db_target
+    schema: public
+    
     tables:
+      # ===== TABELAS ORIGINAIS =====
       - name: clientes
-        description: "Tabela de clientes brutos replicada do sistema de origem."
-        # Opcional: defina colunas para documentação ou testes
-        # columns:
-        #   - name: id
-        #     description: "Chave primária do cliente."
-        #     tests:
-        #       - unique
-        #       - not_null
+        description: "Dados de clientes do sistema transacional"
+        columns:
+          - name: id
+            description: "ID único do cliente"
+            tests:
+              - unique
+              - not_null
+          - name: nome
+            description: "Nome completo do cliente"
+            tests:
+              - not_null
+          - name: email
+            description: "Email do cliente"
+            tests:
+              - unique
+              - not_null
+          - name: telefone
+            description: "Telefone de contato"
+          - name: cpf
+            description: "CPF do cliente"
+            tests:
+              - unique
+          - name: data_nascimento
+            description: "Data de nascimento"
+          - name: endereco
+            description: "Endereço completo em JSON"
+          - name: status
+            description: "Status do cliente (ativo, inativo, etc.)"
+          - name: tipo_cliente
+            description: "Tipo do cliente (pessoa_fisica, pessoa_juridica)"
+          - name: limite_credito
+            description: "Limite de crédito aprovado"
+          - name: data_cadastro
+            description: "Data de cadastro no sistema"
+          - name: updated_at
+            description: "Timestamp da última atualização"
+          - name: created_by
+            description: "Usuário que criou o registro"
+          - name: version
+            description: "Versão do registro para controle de alterações"
 
       - name: pedidos
-        description: "Tabela de pedidos brutos replicada do sistema de origem."
-        # columns:
-        #   - name: id
-        #     description: "Chave primária do pedido."
-        #     tests:
-        #       - unique
-        #       - not_null
-        #   - name: cliente_id
-        #     description: "Chave estrangeira para a tabela de clientes."
-        #     tests:
-        #       - not_null
-        #       - relationships:
-        #           to: source('airbyte_raw_data', 'clientes')
-        #           field: id
+        description: "Pedidos realizados pelos clientes"
+        columns:
+          - name: id
+            description: "ID único do pedido"
+            tests:
+              - unique
+              - not_null
+          - name: cliente_id
+            description: "FK para a tabela de clientes"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_data', 'clientes')
+                  field: id
+          - name: numero_pedido
+            description: "Número único do pedido"
+            tests:
+              - unique
+              - not_null
+          - name: data_pedido
+            description: "Data em que o pedido foi realizado"
+          - name: status
+            description: "Status do pedido (pendente, processando, enviado, entregue)"
+          - name: valor_bruto
+            description: "Valor bruto do pedido"
+            tests:
+              - not_null
+          - name: desconto
+            description: "Valor do desconto aplicado"
+          - name: valor_liquido
+            description: "Valor final após descontos (calculado)"
+          - name: metodo_pagamento
+            description: "Forma de pagamento utilizada"
+          - name: canal_venda
+            description: "Canal onde a venda foi realizada"
+          - name: observacoes
+            description: "Observações adicionais sobre o pedido"
+          - name: data_entrega_prevista
+            description: "Data prevista para entrega"
+          - name: data_entrega_real
+            description: "Data real da entrega (quando disponível)"
+          - name: updated_at
+            description: "Timestamp da última atualização"
+          - name: created_by
+            description: "Usuário que criou o registro"
+          - name: version
+            description: "Versão do registro"
+
+      # ===== NOVAS TABELAS PARA MÚLTIPLAS FONTES =====
+      - name: produtos
+        description: "Catálogo de produtos do e-commerce"
+        columns:
+          - name: id
+            description: "ID único do produto"
+            tests:
+              - unique
+              - not_null
+          - name: codigo_produto
+            description: "Código único do produto"
+            tests:
+              - unique
+              - not_null
+          - name: nome
+            description: "Nome do produto"
+            tests:
+              - not_null
+          - name: categoria
+            description: "Categoria principal do produto"
+          - name: subcategoria
+            description: "Subcategoria do produto"
+          - name: marca
+            description: "Marca do produto"
+          - name: preco_custo
+            description: "Preço de custo"
+          - name: preco_venda
+            description: "Preço de venda ao consumidor"
+            tests:
+              - not_null
+          - name: margem_lucro
+            description: "Margem de lucro calculada automaticamente"
+          - name: estoque_atual
+            description: "Quantidade em estoque"
+          - name: estoque_minimo
+            description: "Estoque mínimo para reposição"
+          - name: ativo
+            description: "Se o produto está ativo para venda"
+          - name: peso
+            description: "Peso do produto em kg"
+          - name: dimensoes
+            description: "Dimensões do produto em JSON"
+          - name: descricao
+            description: "Descrição detalhada do produto"
+          - name: tags
+            description: "Tags para categorização"
+          - name: data_lancamento
+            description: "Data de lançamento do produto"
+          - name: fornecedor_id
+            description: "ID do fornecedor"
+          - name: updated_at
+            description: "Timestamp da última atualização"
+
+      - name: itens_pedido
+        description: "Itens individuais dos pedidos"
+        columns:
+          - name: id
+            description: "ID único do item"
+            tests:
+              - unique
+              - not_null
+          - name: pedido_id
+            description: "FK para o pedido"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_data', 'pedidos')
+                  field: id
+          - name: produto_id
+            description: "FK para o produto"
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw_data', 'produtos')
+                  field: id
+          - name: quantidade
+            description: "Quantidade do produto no pedido"
+            tests:
+              - not_null
+          - name: preco_unitario
+            description: "Preço unitário no momento da venda"
+            tests:
+              - not_null
+          - name: desconto_item
+            description: "Desconto específico do item"
+          - name: valor_total
+            description: "Valor total do item (calculado)"
+          - name: observacoes
+            description: "Observações sobre o item"
+          - name: updated_at
+            description: "Timestamp da última atualização"
+
+      - name: campanhas_marketing
+        description: "Campanhas de marketing e suas métricas"
+        columns:
+          - name: id
+            description: "ID único da campanha"
+            tests:
+              - unique
+              - not_null
+          - name: nome
+            description: "Nome da campanha"
+            tests:
+              - not_null
+          - name: tipo
+            description: "Tipo da campanha (promocional, branding, etc.)"
+            tests:
+              - not_null
+          - name: canal
+            description: "Canal de marketing utilizado"
+          - name: orcamento
+            description: "Orçamento total da campanha"
+          - name: data_inicio
+            description: "Data de início da campanha"
+            tests:
+              - not_null
+          - name: data_fim
+            description: "Data de fim da campanha"
+          - name: status
+            description: "Status atual da campanha"
+          - name: meta_leads
+            description: "Meta de leads a serem gerados"
+          - name: leads_gerados
+            description: "Número de leads efetivamente gerados"
+          - name: taxa_conversao
+            description: "Taxa de conversão da campanha"
+          - name: roi
+            description: "Return on Investment da campanha"
+          - name: descricao
+            description: "Descrição detalhada da campanha"
+          - name: parametros
+            description: "Parâmetros específicos em JSON"
+          - name: updated_at
+            description: "Timestamp da última atualização"
+
+      - name: leads
+        description: "Leads gerados pelas campanhas de marketing"
+        columns:
+          - name: id
+            description: "ID único do lead"
+            tests:
+              - unique
+              - not_null
+          - name: nome
+            description: "Nome do lead"
+            tests:
+              - not_null
+          - name: email
+            description: "Email do lead"
+          - name: telefone
+            description: "Telefone de contato"
+          - name: empresa
+            description: "Empresa do lead"
+          - name: cargo
+            description: "Cargo do lead na empresa"
+          - name: fonte
+            description: "Fonte de origem do lead"
+          - name: campanha_id
+            description: "FK para a campanha que gerou o lead"
+            tests:
+              - relationships:
+                  to: source('raw_data', 'campanhas_marketing')
+                  field: id
+          - name: score
+            description: "Score de qualificação do lead (0-100)"
+          - name: status
+            description: "Status atual do lead no funil de vendas"
+          - name: interesse
+            description: "Nível de interesse demonstrado"
+          - name: orcamento_estimado
+            description: "Orçamento estimado do lead"
+          - name: data_contato
+            description: "Data do primeiro contato"
+          - name: data_conversao
+            description: "Data da conversão (se aplicável)"
+          - name: observacoes
+            description: "Observações sobre o lead"
+          - name: tags
+            description: "Tags para categorização"
+          - name: ultima_atividade
+            description: "Timestamp da última atividade"
+          - name: updated_at
+            description: "Timestamp da última atualização"
+
+# ===== CONFIGURAÇÕES GERAIS =====
+models:
+  - name: bronze
+    description: "Camada Bronze - Dados brutos com limpeza mínima"
+  - name: silver  
+    description: "Camada Silver - Dados limpos e padronizados"
+  - name: gold
+    description: "Camada Gold - Agregações e métricas de negócio"

@@ -3,33 +3,55 @@
 -- Este modelo transforma os dados brutos dos clientes da camada bronze,
 -- aplicando limpezas, padronizações e enriquecimentos.
 
+{{ config(
+    tags=["silver"],
+    materialized='table'
+) }}
+
 WITH bronze_clientes AS (
     SELECT
-        id AS cliente_id_origem, -- Renomeia para clareza e evitar conflito
+        id AS cliente_id_origem,
         nome,
         email,
+        telefone,
+        cpf,
+        data_nascimento,
+        endereco,
+        status,
+        tipo_cliente,
+        limite_credito,
         data_cadastro,
-        ultima_atualizacao,
-        _airbyte_emitted_at AS data_replicacao_airbyte
+        updated_at
     FROM
         {{ ref('bronze_clientes') }}
 )
 
 SELECT
     cliente_id_origem,
-    INITCAP(TRIM(nome)) AS nome_completo, -- Padroniza nome para Title Case e remove espaços extras
-    LOWER(TRIM(email)) AS email_padronizado, -- Padroniza email para lowercase e remove espaços extras
+    INITCAP(TRIM(nome)) AS nome_completo,
+    LOWER(TRIM(email)) AS email_padronizado,
+    telefone,
+    cpf,
+    data_nascimento,
+    endereco,
+    status,
+    tipo_cliente,
+    limite_credito,
     CAST(data_cadastro AS TIMESTAMP) AS data_cadastro_ts,
-    CAST(ultima_atualizacao AS TIMESTAMP) AS ultima_atualizacao_ts,
-    data_replicacao_airbyte,
-    -- Exemplo de coluna derivada: Domínio do email
+    CAST(updated_at AS TIMESTAMP) AS updated_at_ts,
+    CURRENT_TIMESTAMP AS data_processamento,
+    -- Colunas derivadas
     SUBSTRING(email FROM POSITION('@' IN email) + 1) AS dominio_email,
-    -- Exemplo de coluna derivada: Ano de cadastro
-    EXTRACT(YEAR FROM CAST(data_cadastro AS TIMESTAMP)) AS ano_cadastro
+    EXTRACT(YEAR FROM CAST(data_cadastro AS TIMESTAMP)) AS ano_cadastro,
+    CASE 
+        WHEN data_nascimento IS NOT NULL 
+        THEN EXTRACT(YEAR FROM AGE(data_nascimento))
+        ELSE NULL 
+    END AS idade_estimada
 FROM
     bronze_clientes
 WHERE
-    email IS NOT NULL -- Exemplo de filtro para garantir qualidade dos dados
+    email IS NOT NULL 
     AND nome IS NOT NULL
 
 -- Adicionar aqui mais transformações conforme necessário:

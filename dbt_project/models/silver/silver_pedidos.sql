@@ -3,16 +3,27 @@
 -- Este modelo transforma os dados brutos dos pedidos da camada bronze,
 -- aplicando limpezas, padronizações e cálculos.
 
+{{ config(
+    tags=["silver"],
+    materialized='table'
+) }}
+
 WITH bronze_pedidos AS (
     SELECT
         id AS pedido_id_origem,
         cliente_id AS cliente_id_origem,
-        produto,
-        quantidade,
-        preco_unitario,
+        numero_pedido,
         data_pedido,
-        ultima_atualizacao,
-        _airbyte_emitted_at AS data_replicacao_airbyte
+        status,
+        valor_bruto,
+        desconto,
+        valor_liquido,
+        metodo_pagamento,
+        canal_venda,
+        observacoes,
+        data_entrega_prevista,
+        data_entrega_real,
+        updated_at
     FROM
         {{ ref('bronze_pedidos') }}
 )
@@ -20,20 +31,37 @@ WITH bronze_pedidos AS (
 SELECT
     p.pedido_id_origem,
     p.cliente_id_origem,
-    TRIM(p.produto) AS produto_nome,
-    p.quantidade,
-    CAST(p.preco_unitario AS DECIMAL(18, 2)) AS preco_unitario_decimal,
-    (p.quantidade * CAST(p.preco_unitario AS DECIMAL(18, 2))) AS valor_total_pedido,
+    TRIM(p.numero_pedido) AS numero_pedido_clean,
+    p.status,
+    CAST(p.valor_bruto AS DECIMAL(18, 2)) AS valor_bruto_decimal,
+    CAST(p.desconto AS DECIMAL(18, 2)) AS desconto_decimal,
+    CAST(p.valor_liquido AS DECIMAL(18, 2)) AS valor_liquido_decimal,
+    p.metodo_pagamento,
+    p.canal_venda,
+    p.observacoes,
     CAST(p.data_pedido AS TIMESTAMP) AS data_pedido_ts,
-    CAST(p.ultima_atualizacao AS TIMESTAMP) AS ultima_atualizacao_ts,
-    p.data_replicacao_airbyte,
+    p.data_entrega_prevista,
+    p.data_entrega_real,
+    CAST(p.updated_at AS TIMESTAMP) AS updated_at_ts,
+    CURRENT_TIMESTAMP AS data_processamento,
     EXTRACT(YEAR FROM CAST(p.data_pedido AS TIMESTAMP)) AS ano_pedido,
     EXTRACT(MONTH FROM CAST(p.data_pedido AS TIMESTAMP)) AS mes_pedido,
-    EXTRACT(DAY FROM CAST(p.data_pedido AS TIMESTAMP)) AS dia_pedido
+    EXTRACT(DAY FROM CAST(p.data_pedido AS TIMESTAMP)) AS dia_pedido,
+    -- Cálculos derivados
+    CASE 
+        WHEN p.valor_bruto > 0 
+        THEN (p.desconto / p.valor_bruto * 100)
+        ELSE 0 
+    END AS percentual_desconto,
+    CASE 
+        WHEN p.data_entrega_real IS NOT NULL AND p.data_entrega_prevista IS NOT NULL
+        THEN p.data_entrega_real - p.data_entrega_prevista
+        ELSE NULL
+    END AS atraso_entrega_dias
 FROM
     bronze_pedidos p
 WHERE
-    p.quantidade > 0 AND p.preco_unitario > 0 -- Garante dados válidos
+    p.valor_bruto > 0 -- Garante dados válidos
 
 -- Adicionar aqui mais transformações conforme necessário:
 -- - Categorização de produtos

@@ -6,9 +6,10 @@ WITH fct_pedidos AS (
     SELECT
         cliente_id,
         nome_cliente,
-        EXTRACT(YEAR FROM data_pedido) AS ano_pedido,
-        EXTRACT(MONTH FROM data_pedido) AS mes_pedido,
-        valor_total_pedido
+        ano_pedido,
+        mes_pedido,
+        valor_liquido,
+        pedido_id
     FROM {{ ref('fct_pedidos') }}
 )
 
@@ -17,8 +18,8 @@ SELECT
     nome_cliente,
     ano_pedido,
     mes_pedido,
-    SUM(valor_total_pedido) AS valor_total_pedidos_mensal,
-    COUNT(DISTINCT CASE WHEN valor_total_pedido > 0 THEN cliente_id || '-' || ano_pedido || '-' || mes_pedido END) AS numero_de_pedidos_mensal -- Contagem de pedidos no mês
+    SUM(valor_liquido) AS valor_total_pedidos_mensal,
+    COUNT(DISTINCT pedido_id) AS numero_de_pedidos_mensal
 FROM
     fct_pedidos
 GROUP BY

@@ -1,0 +1,70 @@
+# Dynamic configuration for Temporal development environment
+# This file provides runtime configuration for Temporal services
+
+# Frontend service configuration
+frontend.rps:
+  - value: 2000
+
+frontend.globalNamespaceRPS:
+  - value: 1000
+
+# History service configuration
+history.rps:
+  - value: 3000
+
+history.persistenceMaxQPS:
+  - value: 3000
+
+# Matching service configuration
+matching.rps:
+  - value: 3000
+
+matching.persistenceMaxQPS:
+  - value: 3000
+
+# Worker service configuration
+worker.replicationTaskProcessorMaxQPS:
+  - value: 1000
+
+worker.replicationTaskProcessorStartWait:
+  - value: 5s
+
+# System limits
+system.maxIDLength:
+  - value: 1000
+
+system.blobSizeLimitError:
+  - value: 2097152
+
+system.blobSizeLimitWarn:
+  - value: 262144
+
+# Namespace settings
+namespace.maxBadBinaryCount:
+  - value: 10
+
+namespace.maxNamespaceCountPerInstance:
+  - value: 1200
+
+# Workflow execution settings
+limit.maxIDLength:
+  - value: 1000
+
+limit.blobSizeLimitError:
+  - value: 2097152
+
+limit.blobSizeLimitWarn:
+  - value: 262144
+
+# Persistence settings
+persistence.maxConns:
+  - value: 20
+
+persistence.maxIdleConns:
+  - value: 20
+
+persistence.maxConnLifetime:
+  - value: 1h
+
+persistence.maxIdleTime:
+  - value: 1h

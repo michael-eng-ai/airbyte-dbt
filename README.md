@@ -1,7 +1,195 @@
-# Pipeline de Dados com Postgres, Airbyte, dbt e Docker
+# 🚀 Pipeline CDC Completo - Airbyte + DBT
 
-Este projeto demonstra um pipeline de dados completo utilizando PostgreSQL como banco de dados de origem, Airbyte para replicação de dados (CDC), dbt para transformação de dados seguindo a arquitetura medalhão (Bronze, Silver, Gold), e Docker para orquestrar todos os serviços.
+## 📋 **Visão Geral**
 
-Data da Criação: 19 de maio de 2023
+Pipeline de dados moderno implementando **Change Data Capture (CDC)** com:
+- **PostgreSQL Source** → Dados originais com CDC habilitado
+- **Airbyte** → Engine de replicação em tempo real  
+- **PostgreSQL Target** → Destino da replicação
+- **DBT** → Transformações de dados (Bronze → Silver → Gold)
+- **MinIO** → Data Lake S3-compatible
+- **APIs Simuladas** → Fontes de dados externas
 
-## Arquitetura\n\nO pipeline segue a seguinte arquitetura:\n\n1.  **Fonte de Dados (PostgreSQL - `postgres_source_db`):**\n    *   Um banco de dados PostgreSQL (`db_source`) é populado com dados de exemplo (clientes e pedidos) através de um script de inicialização (`postgres_init_scripts/init_source_db.sql`).\n    *   Este banco simula um sistema transacional de origem.\n\n2.  **Ingestão e Replicação (Airbyte):**\n    *   Airbyte é configurado para conectar-se ao `postgres_source_db`.\n    *   Ele replica os dados das tabelas `clientes` e `pedidos` para o mesmo banco de dados `postgres_source_db`, mas idealmente em um schema diferente ou em um data warehouse de destino (para este exemplo, Airbyte escreverá de volta no `db_source`, mas em um ambiente de produção, o destino seria um Data Lake ou Data Warehouse).\n    *   A replicação pode ser configurada para Change Data Capture (CDC) se o PostgreSQL de origem estiver corretamente configurado para replicação lógica (requer `wal_level=logical` e permissões adequadas).\n\n3.  **Transformação (dbt):**\n    *   O dbt (Data Build Tool) é usado para transformar os dados brutos replicados pelo Airbyte.\n    *   As transformações seguem a arquitetura medalhão:\n        *   **Bronze (`models/bronze`):** Contém modelos de staging (`stg_*.sql`) que representam uma cópia levemente processada dos dados de origem. As tarefas incluem renomeação de colunas, casting de tipos e remoção de colunas desnecessárias.\n        *   **Silver (`models/silver`):** Contém modelos que representam dados limpos, validados e enriquecidos. Aqui são criadas tabelas de dimensões (`dim_*.sql`) e fatos (`fct_*.sql`).\n        *   **Gold (`models/gold`):** Contém modelos de dados agregados, prontos para consumo por ferramentas de BI, dashboards ou outras aplicações analíticas (`agg_*.sql`).\n    *   O dbt se conecta ao `postgres_source_db` (que atua tanto como fonte para Airbyte quanto como \"data warehouse\" para dbt neste exemplo simplificado) para ler os dados replicados pelo Airbyte e materializar os modelos transformados.\n\n4.  **Orquestração (Docker Compose):**\n    *   Todos os serviços (PostgreSQL, Airbyte e o executor dbt) são gerenciados e executados como contêineres Docker, definidos no arquivo `docker-compose.yml`.\n\n## Estrutura do Projeto\n\n```\n.\n├── airbyte-dbt/                # Potencialmente para scripts de orquestração Airbyte + dbt (atualmente vazio)\n│   └── main.py\n├── dbt_profiles/               # Configuração de perfil do dbt\n│   └── profiles.yml\n├── dbt_project/                # Projeto dbt\n│   ├── dbt_project.yml         # Configuração principal do projeto dbt\n│   ├── models/\n│   │   ├── bronze/             # Modelos da camada Bronze\n│   │   │   ├── stg_clientes.sql\n│   │   │   └── stg_pedidos.sql\n│   │   ├── silver/             # Modelos da camada Silver\n│   │   │   ├── dim_clientes.sql\n│   │   │   └── fct_pedidos.sql\n│   │   ├── gold/               # Modelos da camada Gold\n│   │   │   └── agg_valor_pedidos_por_cliente_mensal.sql\n│   │   └── staging/\n│   │       └── sources.yml     # Definição das fontes de dados para dbt\n│   └── ... (outras pastas do dbt como macros, tests, etc.)\n├── postgres_init_scripts/      # Scripts SQL para inicializar o banco de dados de origem\n│   └── init_source_db.sql\n├── riocard-dados-dev/          # Pasta existente do projeto (não diretamente gerenciada por este pipeline)\n├── docker-compose.yml          # Arquivo Docker Compose para orquestrar os serviços\n└── README.md                   # Este arquivo\n```\n\n## Pré-requisitos\n\n*   Docker (https://www.docker.com/get-started)\n*   Docker Compose (geralmente incluído na instalação do Docker Desktop)\n\n## Como Executar o Pipeline\n\n1.  **Clone o Repositório (se aplicável):**\n    ```bash\n    # git clone <url_do_repositorio>\n    # cd <nome_do_repositorio>\n    ```\n\n2.  **Construa e Inicie os Contêineres Docker:**\n    Execute o seguinte comando na raiz do projeto (onde o `docker-compose.yml` está localizado):\n    ```bash\n    docker-compose up -d\n    ```\n    Isso irá:\n    *   Baixar as imagens necessárias para PostgreSQL e Airbyte (se ainda não estiverem no seu sistema).\n    *   Criar e iniciar os contêineres para `postgres_source_db`, os serviços do Airbyte (`airbyte-db`, `airbyte-temporal`, `airbyte-server`, `airbyte-webapp`, `airbyte-worker`) e o `dbt_runner`.\n    *   O `postgres_source_db` será inicializado com o schema e os dados definidos em `postgres_init_scripts/init_source_db.sql`.\n\n3.  **Acesse o Airbyte:**\n    *   Abra seu navegador e acesse a UI do Airbyte: `http://localhost:8001`\n    *   Na primeira vez, você pode precisar configurar um login.\n\n4.  **Configure o Airbyte:**\n\n    *   **Crie uma Fonte (Source):**\n        *   Clique em \"Sources\" e depois em \"+ New source\".\n        *   Selecione \"Postgres\" como o tipo de fonte.\n        *   Configure a conexão com o banco de dados de origem (`postgres_source_db`):\n            *   **Name:** `Postgres Source DB` (ou qualquer nome de sua preferência)\n            *   **Host:** `postgres_source_db` (este é o nome do serviço no `docker-compose.yml`)\n            *   **Port:** `5432`\n            *   **User:** `user_source`\n            *   **Password:** `password_source`\n            *   **DB Name:** `db_source`\n            *   **SSL Modes:** `disable` (para ambiente local)\n            *   **Replication Method:** Escolha \"Standard (XMIN)\" para uma replicação baseada em consulta ou tente \"Logical Replication (CDC)\" se o `wal_level` e as permissões estiverem corretamente configurados no `postgres_source_db` para CDC. Para CDC, o `publication` pode ser `airbyte_publication` e o `replication_slot` pode ser `airbyte_slot` (Airbyte tentará criá-los).\n            *   **Schemas:** `public`\n        *   Clique em \"Set up source\". O Airbyte testará a conexão.\n\n    *   **Crie um Destino (Destination):**\n        *   Clique em \"Destinations\" e depois em \"+ New destination\".\n        *   Selecione \"Postgres\" como o tipo de destino.\n        *   Configure a conexão com o banco de dados de destino (neste exemplo, usaremos o mesmo `postgres_source_db`, mas em um cenário real, seria um Data Warehouse ou Data Lake):\n            *   **Name:** `Postgres Destination (dbt)` (ou qualquer nome)\n            *   **Host:** `postgres_source_db`\n            *   **Port:** `5432`\n            *   **User:** `user_source`\n            *   **Password:** `password_source`\n            *   **DB Name:** `db_source`\n            *   **Default Schema:** `public` (ou um schema dedicado como `airbyte_raw` se preferir que o Airbyte escreva os dados brutos lá. Se for diferente de `public`, ajuste o `sources.yml` do dbt).\n            *   **SSL Modes:** `disable`\n        *   Clique em \"Set up destination\".\n\n    *   **Crie uma Conexão (Connection):**\n        *   Clique em \"Connections\" e depois em \"+ New connection\".\n        *   Selecione a Fonte (`Postgres Source DB`) e o Destino (`Postgres Destination (dbt)`) criados.\n        *   **Connection Name:** `Source DB to DWH` (ou similar)\n        *   **Replication frequency:** Escolha \"manual\" para começar, ou agende conforme necessário.\n        *   **Destination Namespace:** Escolha \"Mirror source structure\".\n        *   **Destination Stream Prefix:** Pode deixar em branco ou adicionar um prefixo (ex: `raw_`).\n        *   O Airbyte detectará os streams (tabelas `clientes` e `pedidos`). Certifique-se de que estão selecionados.\n        *   **Sync mode:** Para cada stream, escolha um modo de sincronização. Para começar:\n            *   `clientes`: `Full Refresh | Overwrite` ou `Incremental | Append` (se a tabela tiver uma chave primária e um campo de cursor adequados, como `ultima_atualizacao`).\n            *   `pedidos`: `Full Refresh | Overwrite` ou `Incremental | Append`.\n        *   Clique em \"Set up connection\".\n\n5.  **Execute a Sincronização no Airbyte:**\n    *   Na página da conexão criada, clique em \"Sync now\".\n    *   Aguarde a sincronização ser concluída. Você pode ver os logs para verificar o progresso.\n    *   Após a conclusão, os dados das tabelas `clientes` e `pedidos` do schema `public` do `postgres_source_db` (origem) serão replicados para o schema de destino configurado no Airbyte (neste exemplo, também `public` no `postgres_source_db`). O dbt espera que essas tabelas replicadas estejam disponíveis (ex: `public.clientes`, `public.pedidos`).\n\n6.  **Execute os Modelos dbt:**\n    *   Abra um terminal e acesse o contêiner `dbt_runner`:\n        ```bash\n        docker-compose exec dbt_runner bash\n        ```\n    *   Dentro do contêiner, navegue até o diretório do projeto dbt (já deve estar no `WORKDIR /usr/app/dbt_project`):\n        ```bash\n        # cd /usr/app/dbt_project # Geralmente não é necessário devido ao WORKDIR\n        ```\n    *   **Teste a Conexão dbt (Opcional):**\n        ```bash\n        dbt debug\n        ```\n        Isso verificará se o `profiles.yml` está configurado corretamente e se o dbt consegue se conectar ao banco de dados.\n\n    *   **Execute os Modelos dbt:**\n        ```bash\n        dbt run\n        ```\n        Este comando executará todos os modelos dbt (Bronze, Silver, Gold), materializando as tabelas e views nos schemas especificados (`bronze`, `silver`, `gold`) dentro do banco de dados `db_source`.\n\n    *   **Execute os Testes dbt (Opcional, se houver testes definidos):**\n        ```bash\n        dbt test\n        ```\n\n    *   **Gere a Documentação dbt (Opcional):**\n        ```bash\n        dbt docs generate\n        dbt docs serve\n        ```\n        Isso gerará a documentação do projeto e a servirá localmente (geralmente em `http://localhost:8080` a partir do contêiner, pode precisar de mapeamento de porta adicional no `docker-compose.yml` para acesso externo ou acessar via `docker exec`).\n\n7.  **Verifique os Dados no Banco:**\n    *   Você pode se conectar ao `postgres_source_db` usando uma ferramenta de SQL de sua preferência (ex: DBeaver, pgAdmin, ou `psql` via Docker) para inspecionar os dados nas tabelas de origem, os dados replicados pelo Airbyte (no schema `public` ou no schema de destino do Airbyte), e as tabelas/views criadas pelo dbt nos schemas `bronze`, `silver` e `gold`.\n    *   Para conectar via `psql` no Docker:\n        ```bash\n        docker-compose exec postgres_source_db psql -U user_source -d db_source\n        ```\n        Dentro do `psql`:\n        ```sql\n        \dt bronze.*;\n        \dt silver.*;\n        \dt gold.*;\n        SELECT * FROM gold.agg_valor_pedidos_por_cliente_mensal LIMIT 10;\n        ```\n\n## Padrões e Boas Práticas\n\n*   **Arquitetura Medallion:** Separação clara das camadas de dados (Bronze, Silver, Gold) para progressiva melhoria da qualidade e usabilidade dos dados.\n*   **dbt para Transformação:** Utilização do dbt para modelagem de dados baseada em SQL, com versionamento, testes e documentação.\n*   **Airbyte para Ingestão:** Ferramenta open-source para replicação de dados, facilitando a extração de diversas fontes.\n*   **Docker para Orquestração:** Garante um ambiente de desenvolvimento e execução consistente e reproduzível.\n*   **Clean Code nos Modelos SQL:** Modelos dbt devem ser legíveis, bem comentados e seguir uma estrutura lógica (ex: CTEs para organizar a lógica).\n*   **Documentação:** `sources.yml` para descrever as fontes, e descrições nos modelos dbt. O `README.md` serve como guia geral.\n*   **Idempotência:** Os jobs do Airbyte e as execuções do dbt devem ser idempotentes, ou seja, executá-los múltiplas vezes deve produzir o mesmo resultado final.\n\n## Próximos Passos e Melhorias\n\n*   **Testes dbt:** Adicionar testes de dados (singular, genérico) para garantir a qualidade e a integridade dos dados em cada camada.\n*   **CDC Avançado:** Configurar e validar completamente o CDC com replicação lógica no PostgreSQL para uma captura de alterações mais eficiente.\n*   **Destino Dedicado:** Configurar o Airbyte para escrever em um Data Warehouse dedicado (ex: outro contêiner PostgreSQL, Snowflake, BigQuery) em vez de usar o mesmo banco de origem.\n*   **Orquestração de Pipeline:** Usar uma ferramenta de orquestração de workflow como Apache Airflow, Prefect, ou Dagster para agendar e monitorar as execuções do Airbyte e do dbt. O `airbyte-dbt/main.py` poderia ser um ponto de partida para scripts de orquestração.\n*   **Variáveis de Ambiente:** Gerenciar segredos e configurações de forma mais robusta (ex: usando arquivos `.env` com `docker-compose`, ou um sistema de gerenciamento de segredos).\n*   **Monitoramento e Logging:** Implementar soluções de monitoramento e logging mais detalhadas para cada componente do pipeline.\n*   **CI/CD:** Configurar um pipeline de Integração Contínua/Entrega Contínua para automatizar testes e deployments das transformações dbt.\n\n## Solução de Problemas Comuns\n\n*   **Conexão Recusada:** Verifique se os nomes dos serviços no `docker-compose.yml` correspondem aos hosts usados nas configurações do Airbyte e dbt. Certifique-se de que os contêineres estão rodando (`docker-compose ps`).\n*   **Permissões no Banco:** O usuário do banco de dados precisa das permissões corretas para leitura, escrita, criação de schemas, e potencialmente replicação (para CDC).\n*   **Versões de Ferramentas:** Incompatibilidades entre versões do Airbyte, dbt ou PostgreSQL podem ocorrer. É bom fixar versões no `docker-compose.yml` para maior estabilidade.\n
+## 🔐 **Credenciais Padronizadas**
+
+**Todos os serviços usam:**
+```
+Usuário: admin
+Senha: admin
+```
+
+## 🎯 **Início Rápido**
+
+### 1️⃣ **Executar Pipeline Completo**
+```bash
+./start_pipeline.sh
+```
+
+### 2️⃣ **Configurar Airbyte CDC (Manual)**
+1. Abra http://localhost:8001
+2. Configure Source: PostgreSQL `localhost:5430` (admin/admin)
+3. Configure Target: PostgreSQL `localhost:5431` (admin/admin)
+4. Ative CDC para tabelas: `clientes`, `pedidos`, `produtos`, `leads`
+5. Inicie sincronização
+
+### 3️⃣ **Executar DBT (Após CDC configurado)**
+```bash
+python3 scripts/executar_dbt.py debug    # Testar conexão
+python3 scripts/executar_dbt.py bronze   # Modelos bronze
+python3 scripts/executar_dbt.py silver   # Modelos silver
+python3 scripts/executar_dbt.py gold     # Modelos gold
+python3 scripts/executar_dbt.py full     # Pipeline completo
+```
+
+### 4️⃣ **Limpeza Completa (quando quiser resetar tudo)**
+```bash
+./clean_docker_environment.sh
+```
+**⚠️ CUIDADO:** Remove TUDO - containers, volumes, dados, configurações!
+
+## ��️ **Arquitetura**
+
+### **Abordagem Híbrida: Docker + Python**
+- **Docker**: Apenas para infraestrutura (PostgreSQL, Airbyte, MinIO)
+- **Python**: Execução de lógica (DBT, verificações, criação de tabelas)
+- **Credenciais Padronizadas**: admin/admin para todos os serviços
+
+### **Fluxo de Dados**
+```
+1. PostgreSQL Source (dados originais)
+   ↓
+2. Airbyte CDC (Change Data Capture)
+   ↓
+3. PostgreSQL Target (dados replicados)
+   ↓
+4. DBT Python (transformações)
+   ↓
+5. Dashboard Streamlit
+```
+
+## 📊 **Estrutura de Dados**
+
+### **Tabelas Principais:**
+- **clientes** - Dados de clientes com perfil empresarial
+- **pedidos** - Pedidos sem itens (estrutura empresarial)
+- **produtos** - Catálogo de produtos e-commerce
+- **itens_pedido** - Relacionamento produtos↔pedidos
+- **campanhas_marketing** - Campanhas de marketing
+- **leads** - Leads gerados pelas campanhas
+
+### **Camadas DBT:**
+- **🥉 Bronze** - Dados brutos replicados via Airbyte
+- **🥈 Silver** - Dados limpos e padronizados
+- **🥇 Gold** - Agregações e métricas de negócio
+
+## 🌐 **URLs dos Serviços**
+
+| Serviço | URL | Credenciais |
+|---------|-----|-------------|
+| **Airbyte UI** | http://localhost:8001 | admin/admin |
+| **MinIO Console** | http://localhost:9001 | admin/admin |
+| **PostgreSQL Source** | localhost:5430 | admin/admin |
+| **PostgreSQL Target** | localhost:5431 | admin/admin |
+| **E-commerce API** | http://localhost:8010 | - |
+| **CRM API** | http://localhost:8011 | - |
+
+## 🛠️ **Comandos Úteis**
+
+### **Verificar Status**
+```bash
+cd config && docker compose ps
+```
+
+### **Logs dos Serviços**
+```bash
+cd config
+docker compose logs postgres_source
+docker compose logs airbyte-server
+docker compose logs dbt_runner
+```
+
+### **Testar Conexões**
+```bash
+# PostgreSQL Source
+psql -h localhost -p 5430 -U admin -d db_source
+
+# PostgreSQL Target  
+psql -h localhost -p 5431 -U admin -d db_target
+
+# DBT Debug
+cd config && docker compose exec dbt_runner dbt debug
+```
+
+### **Parar Tudo**
+```bash
+cd config && docker compose down --remove-orphans
+```
+
+## 📁 **Estrutura do Projeto**
+
+```
+├── start_pipeline.sh              # 🎯 Script principal
+├── config/
+│   ├── env.config                 # Variáveis centralizadas
+│   ├── docker-compose.yml         # Configuração completa
+│   ├── load_env.sh               # Helper para variáveis
+│   └── README_CREDENCIAIS.md     # Documentação de credenciais
+├── postgres_init_scripts/
+│   └── init_source_db.sql        # Schema do banco source
+├── dbt_project/                  # Projeto DBT
+│   ├── models/
+│   │   ├── bronze/              # Camada Bronze
+│   │   ├── silver/              # Camada Silver
+│   │   └── gold/                # Camada Gold
+│   └── dbt_project.yml
+├── dbt_profiles/
+│   └── profiles.yml             # Configuração DBT
+└── apis_simuladas/              # APIs de dados externos
+```
+
+## 🚨 **Troubleshooting**
+
+### **Problema: "role admin does not exist"**
+```bash
+cd config && docker compose down --volumes
+docker system prune -f
+./start_pipeline.sh
+```
+
+### **Problema: DBT não encontra tabelas**
+1. Verifique se Airbyte replicou os dados:
+```bash
+cd config
+docker compose exec postgres_target psql -U admin -d db_target -c "SELECT COUNT(*) FROM clientes;"
+```
+
+2. Se retornar erro, configure Airbyte primeiro
+
+### **Problema: Portas ocupadas**
+```bash
+# Verificar portas em uso
+lsof -i :5430 -i :5431 -i :8001 -i :9001
+
+# Matar processos se necessário
+killall postgres
+docker compose down --remove-orphans
+```
+
+## 🔄 **Fluxo CDC Completo**
+
+1. **📝 APIs inserem dados** → PostgreSQL Source
+2. **🔄 Airbyte captura CDC** → Replica para Target  
+3. **🛠️ DBT processa** → Bronze → Silver → Gold
+4. **📊 Dashboard consome** → Dados transformados
+
+## 🎯 **Próximos Passos**
+
+1. Execute `./start_pipeline.sh`
+2. Configure Airbyte CDC no browser  
+3. Aguarde dados serem replicados
+4. Execute transformações DBT
+5. Monitore pipeline em tempo real
+
+---
+
+**🎉 Pipeline CDC pronto para produção com credenciais admin/admin!**

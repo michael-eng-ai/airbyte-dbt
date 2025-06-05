@@ -1,0 +1,393 @@
+# Configuração completa para CDC com Airbyte
+# Credenciais padronizadas: admin/admin
+# Foco: Múltiplas fontes + Data Lake + CDC real
+
+version: '3.8'
+
+networks:
+  airbyte_network:
+    name: airbyte_network
+
+services:
+  # ============================================================================
+  # BANCO DE DADOS SOURCE - CDC HABILITADO
+  # ============================================================================
+  postgres_source:
+    image: postgres:13
+    container_name: postgres_source_db
+    ports:
+      - "${POSTGRES_SOURCE_PORT:-5430}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_SOURCE_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_SOURCE_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_SOURCE_DB:-db_source}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_source_data:/var/lib/postgresql/data
+      - ../postgres_init_scripts:/docker-entrypoint-initdb.d
+    # Configurações avançadas para CDC
+    command: >
+      postgres
+      -c wal_level=${POSTGRES_WAL_LEVEL:-logical}
+      -c max_wal_senders=${POSTGRES_MAX_WAL_SENDERS:-10}
+      -c max_replication_slots=${POSTGRES_MAX_REPLICATION_SLOTS:-10}
+      -c max_logical_replication_workers=${POSTGRES_MAX_LOGICAL_REPLICATION_WORKERS:-10}
+      -c listen_addresses='*'
+      -c shared_preload_libraries='pg_stat_statements'
+      -c track_commit_timestamp=on
+      -c logging_collector=on
+      -c log_statement=all
+      -c log_min_duration_statement=0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SOURCE_USER:-admin} -d ${POSTGRES_SOURCE_DB:-db_source}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    env_file:
+      - env.config
+
+  # ============================================================================
+  # DATA LAKE - MinIO (S3-Compatible)
+  # ============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: minio_storage
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-admin}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    env_file:
+      - env.config
+
+  # ============================================================================
+  # APIS SIMULADORAS DE DADOS
+  # ============================================================================
+  api_ecommerce:
+    image: python:3.9-slim
+    container_name: api_ecommerce
+    ports:
+      - "${ECOMMERCE_API_PORT:-8010}:8000"
+    volumes:
+      - ../apis_simuladas:/app
+    working_dir: /app
+    command: >
+      bash -c "
+      pip install fastapi uvicorn pandas faker requests;
+      python ecommerce_api.py
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    env_file:
+      - env.config
+
+  api_crm:
+    image: python:3.9-slim
+    container_name: api_crm
+    ports:
+      - "${CRM_API_PORT:-8011}:8000"
+    volumes:
+      - ../apis_simuladas:/app
+    working_dir: /app
+    command: >
+      bash -c "
+      pip install fastapi uvicorn pandas faker requests;
+      python crm_api.py
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    env_file:
+      - env.config
+
+  # ============================================================================
+  # BANCO TARGET PARA AIRBYTE
+  # ============================================================================
+  postgres_target:
+    image: postgres:13
+    container_name: postgres_target_db
+    ports:
+      - "${POSTGRES_TARGET_PORT:-5431}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_TARGET_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_TARGET_PASSWORD:-admin}
+      POSTGRES_DB: ${POSTGRES_TARGET_DB:-db_target}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_target_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_TARGET_USER:-admin} -d ${POSTGRES_TARGET_DB:-db_target}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    env_file:
+      - env.config
+
+  # ============================================================================
+  # AIRBYTE SERVICES - OTIMIZADO
+  # ============================================================================
+  
+  # Banco de dados dedicado do Airbyte
+  airbyte-db:
+    image: postgres:13
+    container_name: airbyte_db
+    networks:
+      - airbyte_network
+    environment:
+      POSTGRES_USER: ${AIRBYTE_DB_USER:-admin}
+      POSTGRES_PASSWORD: ${AIRBYTE_DB_PASSWORD:-admin}
+      POSTGRES_DB: ${AIRBYTE_DB_NAME:-airbyte}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AIRBYTE_DB_USER:-admin} -d ${AIRBYTE_DB_NAME:-airbyte}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    env_file:
+      - env.config
+
+  airbyte-temporal:
+    image: temporalio/auto-setup:1.21.4
+    container_name: airbyte_temporal
+    networks:
+      - airbyte_network
+    environment:
+      - DB=postgresql
+      - POSTGRES_SEEDS=airbyte-db
+      - POSTGRES_USER=${AIRBYTE_DB_USER:-admin}
+      - POSTGRES_PWD=${AIRBYTE_DB_PASSWORD:-admin}
+      - POSTGRES_DB=${AIRBYTE_DB_NAME:-airbyte}
+      - DB_PORT=5432
+    env_file:
+      - env.config
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "airbyte-temporal:7233", "workflow", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "${AIRBYTE_TEMPORAL_PORT}:7233"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    depends_on:
+      airbyte-db:
+        condition: service_healthy
+
+  airbyte-server:
+    image: airbyte/server:0.63.15
+    container_name: airbyte_server
+    networks:
+      - airbyte_network
+    ports:
+      - "8001:8001"
+    depends_on:
+      airbyte-temporal:
+        condition: service_healthy
+      airbyte-db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=jdbc:postgresql://airbyte-db:5432/${AIRBYTE_DB_NAME:-airbyte}
+      - DATABASE_USER=${AIRBYTE_DB_USER:-admin}
+      - DATABASE_PASSWORD=${AIRBYTE_DB_PASSWORD:-admin}
+      - TEMPORAL_ADDRESS=airbyte-temporal:7233
+      - WORKSPACE_ROOT=${AIRBYTE_WORKSPACE_ROOT:-/workspace}
+      - WORKSPACE_DOCKER_MOUNT=${AIRBYTE_WORKSPACE_ROOT:-/workspace}
+      - LOCAL_ROOT=${AIRBYTE_LOCAL_ROOT:-/tmp/airbyte_local}
+      - WEBAPP_URL=http://localhost:8080
+      - API_URL=http://localhost:8001
+      - INTERNAL_API_HOST=airbyte-server:8001
+      - JAVA_OPTS=-XX:+ExitOnOutOfMemoryError -Xmx2g -Xms1g -XX:+UseG1GC
+      - AIRBYTE_VERSION=0.63.15
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JOB_MAIN_CONTAINER_CPU_REQUEST=${JOB_MAIN_CONTAINER_CPU_REQUEST:-1}
+      - JOB_MAIN_CONTAINER_CPU_LIMIT=${JOB_MAIN_CONTAINER_CPU_LIMIT:-2}
+      - JOB_MAIN_CONTAINER_MEMORY_REQUEST=${JOB_MAIN_CONTAINER_MEMORY_REQUEST:-2Gi}
+      - JOB_MAIN_CONTAINER_MEMORY_LIMIT=${JOB_MAIN_CONTAINER_MEMORY_LIMIT:-4Gi}
+    volumes:
+      - workspace_root:${AIRBYTE_WORKSPACE_ROOT:-/workspace}
+      - data_root:${AIRBYTE_LOCAL_ROOT:-/tmp/airbyte_local}
+      - airbyte_config:/configs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 15
+      start_period: 120s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+        reservations:
+          memory: 2G
+
+  airbyte-worker:
+    image: airbyte/worker:0.63.15
+    platform: linux/amd64
+    container_name: airbyte_worker
+    networks:
+      - airbyte_network
+    depends_on:
+      airbyte-db:
+        condition: service_healthy
+      airbyte-temporal:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=jdbc:postgresql://airbyte-db:5432/${AIRBYTE_DB_NAME:-airbyte}
+      - DATABASE_USER=${AIRBYTE_DB_USER:-admin}
+      - DATABASE_PASSWORD=${AIRBYTE_DB_PASSWORD:-admin}
+      - TEMPORAL_ADDRESS=airbyte-temporal:7233
+      - WORKSPACE_ROOT=${AIRBYTE_WORKSPACE_ROOT:-/workspace}
+      - WORKSPACE_DOCKER_MOUNT=${AIRBYTE_WORKSPACE_ROOT:-/workspace}
+      - LOCAL_ROOT=${AIRBYTE_LOCAL_ROOT:-/tmp/airbyte_local}
+      - WORKER_ENVIRONMENT=docker
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - JAVA_OPTS=-XX:+ExitOnOutOfMemoryError -Xmx4g -Xms2g -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+      - AIRBYTE_LOCAL_ROOT=${AIRBYTE_LOCAL_ROOT:-/tmp/airbyte_local}
+      - AIRBYTE_VERSION=0.63.15
+      - AUTO_DETECT_SCHEMA=${AUTO_DETECT_SCHEMA:-true}
+      - USE_STREAM_CAPABLE_STATE=${USE_STREAM_CAPABLE_STATE:-true}
+      - MICRONAUT_ENVIRONMENTS=control-plane
+      - SHOULD_RUN_NOTIFY_WORKFLOWS=${SHOULD_RUN_NOTIFY_WORKFLOWS:-true}
+      - MAX_SYNC_JOB_ATTEMPTS=${MAX_SYNC_JOB_ATTEMPTS:-3}
+      - MAX_SPEC_JOB_ATTEMPTS=${MAX_SPEC_JOB_ATTEMPTS:-3}
+      - MAX_CHECK_JOB_ATTEMPTS=${MAX_CHECK_JOB_ATTEMPTS:-3}
+      - MAX_DISCOVER_JOB_ATTEMPTS=${MAX_DISCOVER_JOB_ATTEMPTS:-3}
+      - SYNC_JOB_MAX_TIMEOUT_DAYS=${SYNC_JOB_MAX_TIMEOUT_DAYS:-3}
+      - JOB_MAIN_CONTAINER_CPU_REQUEST=${JOB_MAIN_CONTAINER_CPU_REQUEST:-1}
+      - JOB_MAIN_CONTAINER_CPU_LIMIT=${JOB_MAIN_CONTAINER_CPU_LIMIT:-2}
+      - JOB_MAIN_CONTAINER_MEMORY_REQUEST=${JOB_MAIN_CONTAINER_MEMORY_REQUEST:-2Gi}
+      - JOB_MAIN_CONTAINER_MEMORY_LIMIT=${JOB_MAIN_CONTAINER_MEMORY_LIMIT:-4Gi}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - workspace_root:${AIRBYTE_WORKSPACE_ROOT:-/workspace}
+      - data_root:${AIRBYTE_LOCAL_ROOT:-/tmp/airbyte_local}
+      - tmp_root:/tmp
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '2.0'
+        reservations:
+          memory: 4G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'airbyte-worker' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  airbyte-webapp:
+    image: airbyte/webapp:0.63.15
+    platform: linux/amd64
+    container_name: airbyte_webapp
+    networks:
+      - airbyte_network
+    ports:
+      - "8080:80"
+    environment:
+      - AIRBYTE_API_HOST=airbyte-server:8001
+      - CONNECTOR_BUILDER_API_HOST=airbyte-server:8001
+      - INTERNAL_API_HOST=airbyte-server:8001
+      - AIRBYTE_API_URL=http://airbyte-server:8001/api
+      - TRACKING_STRATEGY=logging
+    depends_on:
+      airbyte-server:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ============================================================================
+  # DBT RUNNER
+  # ============================================================================
+  dbt_runner:
+    image: python:3.9-slim
+    container_name: dbt_runner_container
+    depends_on:
+      postgres_target:
+        condition: service_healthy
+    volumes:
+      - ../dbt_project:/usr/app/dbt_project
+      - ../dbt_profiles:/root/.dbt
+    working_dir: /usr/app/dbt_project
+    environment:
+      DBT_TARGET_TYPE: ${DBT_TARGET_TYPE:-postgres}
+      DBT_TARGET_HOST: ${DBT_TARGET_HOST:-postgres_target}
+      DBT_TARGET_PORT: ${DBT_TARGET_PORT:-5432}
+      DBT_TARGET_USER: ${DBT_TARGET_USER:-admin}
+      DBT_TARGET_PASSWORD: ${DBT_TARGET_PASSWORD:-admin}
+      DBT_TARGET_DB: ${DBT_TARGET_DB:-db_target}
+      DBT_TARGET_SCHEMA: ${DBT_TARGET_SCHEMA:-public}
+    command: >
+      bash -c "
+      apt-get update && apt-get install -y postgresql-client curl;
+      pip install dbt-postgres==1.9.0 dbt-core==1.9.0;
+      tail -f /dev/null;
+      "
+    restart: unless-stopped
+    env_file:
+      - env.config
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  postgres_source_data:
+    driver: local
+  postgres_target_data:
+    driver: local
+  postgres_data:
+    driver: local
+  airbyte_config:
+    driver: local
+  airbyte_workspace:
+    driver: local
+  minio_data:
+    driver: local
+  workspace_root:
+  data_root:
+  tmp_root:

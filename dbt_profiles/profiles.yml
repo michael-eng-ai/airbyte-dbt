@@ -1,29 +1,50 @@
 # dbt_profiles/profiles.yml
+# Configuração DBT com credenciais padronizadas admin/admin
+# Conecta ao banco TARGET onde Airbyte replica os dados via CDC
 
+meu_projeto_dbt_riocard:
+  target: dev
+  outputs:
+    dev:
+      type: "{{ env_var('DBT_TARGET_TYPE', 'postgres') }}"
+      host: "{{ env_var('DBT_TARGET_HOST', 'postgres_target') }}"
+      user: "{{ env_var('DBT_TARGET_USER', 'admin') }}"
+      password: "{{ env_var('DBT_TARGET_PASSWORD', 'admin') }}"
+      port: "{{ env_var('DBT_TARGET_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('DBT_TARGET_DB', 'db_target') }}"
+      schema: "{{ env_var('DBT_TARGET_SCHEMA', 'public') }}"
+      threads: 4
+      keepalives_idle: 0
+      connect_timeout: 10
+      search_path: "public"
+
+    # Configuração para ambiente de produção (mesmas credenciais por simplicidade)
+    prod:
+      type: "{{ env_var('DBT_TARGET_TYPE', 'postgres') }}"
+      host: "{{ env_var('DBT_PROD_HOST', 'postgres_target') }}"
+      user: "{{ env_var('DBT_PROD_USER', 'admin') }}"
+      password: "{{ env_var('DBT_PROD_PASSWORD', 'admin') }}"
+      port: "{{ env_var('DBT_PROD_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('DBT_PROD_DBNAME', 'db_target') }}"
+      schema: "{{ env_var('DBT_PROD_SCHEMA', 'public') }}"
+      threads: 8
+      keepalives_idle: 0
+      connect_timeout: 10
+      search_path: "public"
+
+# Configuração alternativa usando nome default (para compatibilidade)
 default:
   target: dev
   outputs:
     dev:
-      type: postgres
-      host: "{{ env_var('DBT_DB_HOST', 'postgres_source_db') }}"  # Uso de variáveis de ambiente
-      user: "{{ env_var('DBT_DB_USER', 'user_source') }}"
-      password: "{{ env_var('DBT_DB_PASSWORD', 'password_source') }}"
-      port: "{{ env_var('DBT_DB_PORT', '5432') | as_number }}"
-      dbname: "{{ env_var('DBT_DB_NAME', 'db_source') }}"
-      schema: public
+      type: "{{ env_var('DBT_TARGET_TYPE', 'postgres') }}"
+      host: "{{ env_var('DBT_TARGET_HOST', 'postgres_target') }}"
+      user: "{{ env_var('DBT_TARGET_USER', 'admin') }}"
+      password: "{{ env_var('DBT_TARGET_PASSWORD', 'admin') }}"
+      port: "{{ env_var('DBT_TARGET_PORT', '5432') | as_number }}"
+      dbname: "{{ env_var('DBT_TARGET_DB', 'db_target') }}"
+      schema: "{{ env_var('DBT_TARGET_SCHEMA', 'public') }}"
       threads: 4
       keepalives_idle: 0
       connect_timeout: 10
-
-    # Configuração para ambiente de produção
-    prod:
-      type: postgres
-      host: "{{ env_var('DBT_PROD_HOST') }}"
-      user: "{{ env_var('DBT_PROD_USER') }}"
-      password: "{{ env_var('DBT_PROD_PASSWORD') }}"
-      port: "{{ env_var('DBT_PROD_PORT', '5432') | as_number }}"
-      dbname: "{{ env_var('DBT_PROD_DBNAME') }}"
-      schema: public
-      threads: 8
-      keepalives_idle: 0
-      connect_timeout: 10
+      search_path: "public"

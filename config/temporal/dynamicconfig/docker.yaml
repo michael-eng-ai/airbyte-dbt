@@ -1,0 +1,44 @@
+# Docker configuration for Temporal
+# This file provides the basic configuration needed for Temporal to run in Docker
+
+frontend.rps:
+  - value: 2000
+
+frontend.globalNamespaceRPS:
+  - value: 1000
+
+history.rps:
+  - value: 3000
+
+history.persistenceMaxQPS:
+  - value: 3000
+
+matching.rps:
+  - value: 3000
+
+matching.persistenceMaxQPS:
+  - value: 3000
+
+worker.replicationTaskProcessorMaxQPS:
+  - value: 1000
+
+system.maxIDLength:
+  - value: 1000
+
+system.blobSizeLimitError:
+  - value: 2097152
+
+system.blobSizeLimitWarn:
+  - value: 262144
+
+namespace.maxBadBinaryCount:
+  - value: 10
+
+namespace.maxNamespaceCountPerInstance:
+  - value: 1200
+
+persistence.maxConns:
+  - value: 20
+
+persistence.maxIdleConns:
+  - value: 20
