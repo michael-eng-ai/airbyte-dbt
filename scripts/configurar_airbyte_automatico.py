@@ -12,7 +12,8 @@ import sys
 from typing import Dict, Any, Optional
 
 # Configurações
-AIRBYTE_API_URL = "http://localhost:8000/api/v1"
+AIRBYTE_SERVER_PORT = os.environ.get("AIRBYTE_SERVER_PORT", "8001")
+AIRBYTE_API_URL = f"http://localhost:{AIRBYTE_SERVER_PORT}/api/v1"
 POSTGRES_SOURCE_HOST = "postgres_source"
 POSTGRES_SOURCE_PORT = 5432
 POSTGRES_SOURCE_DB = "db_source"
@@ -341,7 +342,7 @@ class AirbyteAutomator:
         self.log_success("🎉 CONFIGURAÇÃO AUTOMÁTICA CONCLUÍDA!")
         print("=" * 50)
         self.log_info(f"📊 Connection ID: {self.connection_id}")
-        self.log_info("🌐 Acesse http://localhost:8001 para monitorar")
+        self.log_info(f"🌐 Acesse http://localhost:{AIRBYTE_SERVER_PORT} para monitorar")
         
         return True
 
