@@ -19,7 +19,7 @@ NC='\033[0m' # No Color
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
 CONFIG_DIR="$PROJECT_DIR/config"
 
-echo -e "${BLUE}🔄 Iniciando restart otimizado do Airbyte...${NC}"
+echo -e "${BLUE} Iniciando restart otimizado do Airbyte...${NC}"
 
 # Função para verificar se um serviço está saudável
 check_service_health() {
@@ -31,7 +31,7 @@ check_service_health() {
     
     while [ $attempt -le $max_attempts ]; do
         if docker-compose -f "$CONFIG_DIR/docker-compose.yml" ps $service_name | grep -q "healthy\|Up"; then
-            echo -e "${GREEN}✅ $service_name está saudável${NC}"
+            echo -e "${GREEN} $service_name está saudável${NC}"
             return 0
         fi
         
@@ -40,20 +40,20 @@ check_service_health() {
         ((attempt++))
     done
     
-    echo -e "${RED}❌ $service_name não ficou saudável após $max_attempts tentativas${NC}"
+    echo -e "${RED} $service_name não ficou saudável após $max_attempts tentativas${NC}"
     return 1
 }
 
 # Função para verificar uso de memória
 check_memory_usage() {
-    echo -e "${BLUE}📊 Verificando uso de memória...${NC}"
+    echo -e "${BLUE} Verificando uso de memória...${NC}"
     
     # Verificar memória disponível no sistema
     available_memory=$(free -m | awk 'NR==2{printf "%.0f", $7}')
     echo -e "${BLUE}💾 Memória disponível: ${available_memory}MB${NC}"
     
     if [ $available_memory -lt 4096 ]; then
-        echo -e "${YELLOW}⚠️  Aviso: Memória disponível baixa. Recomendado: 8GB+ para Airbyte${NC}"
+        echo -e "${YELLOW}  Aviso: Memória disponível baixa. Recomendado: 8GB+ para Airbyte${NC}"
     fi
 }
 
@@ -65,13 +65,13 @@ clean_temp_resources() {
     docker container prune -f > /dev/null 2>&1 || true
     
     # Limpar volumes órfãos (cuidado para não remover dados importantes)
-    echo -e "${YELLOW}⚠️  Limpando volumes órfãos (dados temporários)...${NC}"
+    echo -e "${YELLOW}  Limpando volumes órfãos (dados temporários)...${NC}"
     docker volume prune -f > /dev/null 2>&1 || true
     
     # Limpar cache de imagens não utilizadas
     docker image prune -f > /dev/null 2>&1 || true
     
-    echo -e "${GREEN}✅ Limpeza concluída${NC}"
+    echo -e "${GREEN} Limpeza concluída${NC}"
 }
 
 # Função principal de restart
@@ -103,7 +103,7 @@ restart_airbyte() {
     # Verificar memória antes de reiniciar
     check_memory_usage
     
-    echo -e "${BLUE}🚀 Iniciando serviços do Airbyte na ordem correta...${NC}"
+    echo -e "${BLUE} Iniciando serviços do Airbyte na ordem correta...${NC}"
     
     # Iniciar banco de dados primeiro
     echo -e "${YELLOW}🗄️  Iniciando airbyte-db...${NC}"
@@ -126,16 +126,16 @@ restart_airbyte() {
     check_service_health "airbyte-worker"
     
     # Iniciar webapp
-    echo -e "${YELLOW}🌐 Iniciando airbyte-webapp...${NC}"
+    echo -e "${YELLOW} Iniciando airbyte-webapp...${NC}"
     docker-compose up -d airbyte-webapp
     check_service_health "airbyte-webapp"
     
-    echo -e "${GREEN}✅ Todos os serviços do Airbyte foram reiniciados com sucesso!${NC}"
+    echo -e "${GREEN} Todos os serviços do Airbyte foram reiniciados com sucesso!${NC}"
 }
 
 # Função para mostrar status dos serviços
 show_status() {
-    echo -e "${BLUE}📋 Status dos serviços Airbyte:${NC}"
+    echo -e "${BLUE} Status dos serviços Airbyte:${NC}"
     cd "$CONFIG_DIR"
     docker-compose ps airbyte-db airbyte-temporal airbyte-server airbyte-worker airbyte-webapp
     
@@ -174,7 +174,7 @@ case "${1:-restart}" in
         echo -e "${BLUE}🛑 Parando todos os serviços Airbyte...${NC}"
         cd "$CONFIG_DIR"
         docker-compose stop airbyte-webapp airbyte-worker airbyte-server airbyte-temporal airbyte-db
-        echo -e "${GREEN}✅ Serviços Airbyte parados${NC}"
+        echo -e "${GREEN} Serviços Airbyte parados${NC}"
         ;;
     "help")
         echo -e "${BLUE}🔧 Script de Restart Otimizado do Airbyte${NC}"
@@ -192,7 +192,7 @@ case "${1:-restart}" in
         echo -e "  $0 logs airbyte-worker # Ver logs do worker"
         ;;
     *)
-        echo -e "${RED}❌ Comando inválido: $1${NC}"
+        echo -e "${RED} Comando inválido: $1${NC}"
         echo -e "${YELLOW}Use '$0 help' para ver os comandos disponíveis${NC}"
         exit 1
         ;;

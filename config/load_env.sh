@@ -12,12 +12,12 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}🔧 Variáveis de ambiente carregadas:${NC}"
-echo -e "${GREEN}✅ PostgreSQL Source: ${POSTGRES_SOURCE_USER}@localhost:${POSTGRES_SOURCE_PORT}/${POSTGRES_SOURCE_DB}${NC}"
-echo -e "${GREEN}✅ PostgreSQL Target: ${POSTGRES_TARGET_USER}@localhost:${POSTGRES_TARGET_PORT}/${POSTGRES_TARGET_DB}${NC}"
-echo -e "${GREEN}✅ DBT: Conectando temporariamente ao SOURCE (${DBT_SOURCE_USER}@${DBT_SOURCE_HOST})${NC}"
-echo -e "${GREEN}✅ Airbyte: admin@localhost:${AIRBYTE_WEBAPP_PORT}${NC}"
-echo -e "${GREEN}✅ MinIO: ${MINIO_ROOT_USER}@localhost:${MINIO_CONSOLE_PORT}${NC}"
-echo -e "${GREEN}✅ APIs: E-commerce:${ECOMMERCE_API_PORT} | CRM:${CRM_API_PORT}${NC}"
+echo -e "${GREEN} PostgreSQL Source: ${POSTGRES_SOURCE_USER}@localhost:${POSTGRES_SOURCE_PORT}/${POSTGRES_SOURCE_DB}${NC}"
+echo -e "${GREEN} PostgreSQL Target: ${POSTGRES_TARGET_USER}@localhost:${POSTGRES_TARGET_PORT}/${POSTGRES_TARGET_DB}${NC}"
+echo -e "${GREEN} DBT: Conectando temporariamente ao SOURCE (${DBT_SOURCE_USER}@${DBT_SOURCE_HOST})${NC}"
+echo -e "${GREEN} Airbyte: admin@localhost:${AIRBYTE_WEBAPP_PORT}${NC}"
+echo -e "${GREEN} MinIO: ${MINIO_ROOT_USER}@localhost:${MINIO_CONSOLE_PORT}${NC}"
+echo -e "${GREEN} APIs: E-commerce:${ECOMMERCE_API_PORT} | CRM:${CRM_API_PORT}${NC}"
 
 # Exportar variáveis para docker-compose
 export POSTGRES_SOURCE_USER POSTGRES_SOURCE_PASSWORD POSTGRES_SOURCE_DB POSTGRES_SOURCE_PORT

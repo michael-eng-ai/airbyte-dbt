@@ -12,6 +12,11 @@ from datetime import datetime, timedelta
 from faker import Faker
 import time
 import threading
+import logging
+from typing import Dict, Any
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s : %(message)s')
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CRM API", version="1.0.0")
 fake = Faker('pt_BR')
@@ -124,14 +129,14 @@ def simular_atividades():
                         lead["status"] = random.choice(["Convertido", "Perdido"])
                 
                 atividade_id_counter += 1
-                print(f"📞 Nova atividade: {atividade['tipo']} com lead {lead['nome']}")
+                logger.info(f" Nova atividade: {atividade['tipo']} com lead {lead['nome']}")
         
         time.sleep(random.uniform(5, 15))
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Inicialização da API"""
-    print("🚀 Iniciando API CRM...")
+    logger.info(" Iniciando API CRM...")
     gerar_campanhas_iniciais()
     gerar_leads_iniciais()
     
@@ -139,14 +144,14 @@ async def startup_event():
     simulator_thread = threading.Thread(target=simular_atividades, daemon=True)
     simulator_thread.start()
     
-    print("✅ API CRM iniciada com sucesso!")
+    logger.info(" API CRM iniciada com sucesso!")
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, str]:
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 @app.get("/")
-async def root():
+async def root() -> Dict[str, Any]:
     return {
         "service": "CRM API",
         "version": "1.0.0",
@@ -161,7 +166,7 @@ async def root():
     }
 
 @app.get("/leads")
-async def listar_leads(limit: int = 100, status: str = None):
+async def listar_leads(limit: int = 100, status: str = "") -> Dict[str, Any]:
     """Lista leads"""
     leads = leads_db
     
@@ -177,7 +182,7 @@ async def listar_leads(limit: int = 100, status: str = None):
     }
 
 @app.get("/campanhas")
-async def listar_campanhas(limit: int = 50):
+async def listar_campanhas(limit: int = 50) -> Dict[str, Any]:
     """Lista campanhas"""
     return {
         "total": len(campanhas_db),
@@ -186,11 +191,11 @@ async def listar_campanhas(limit: int = 50):
     }
 
 @app.get("/atividades")
-async def listar_atividades(limit: int = 100, lead_id: int = None):
+async def listar_atividades(limit: int = 100, lead_id: int = 0) -> Dict[str, Any]:
     """Lista atividades"""
     atividades = atividades_db
     
-    if lead_id:
+    if lead_id and lead_id > 0:
         atividades = [a for a in atividades if a['lead_id'] == lead_id]
     
     atividades = atividades[-limit:]
@@ -202,7 +207,7 @@ async def listar_atividades(limit: int = 100, lead_id: int = None):
     }
 
 @app.get("/stats")
-async def estatisticas():
+async def estatisticas() -> Dict[str, Any]:
     """Estatísticas do CRM"""
     # Leads por status
     leads_por_status = {}
@@ -239,5 +244,5 @@ async def estatisticas():
     }
 
 if __name__ == "__main__":
-    print("🚀 Iniciando API CRM na porta 8000...")
+    logger.info(" Iniciando API CRM na porta 8000...")
     uvicorn.run(app, host="0.0.0.0", port=8000) 

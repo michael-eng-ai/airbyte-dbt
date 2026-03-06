@@ -9,13 +9,13 @@ import sys
 import os
 
 def log_info(msg: str):
-    print(f"ℹ️  {msg}")
+    print(f"  {msg}")
 
 def log_success(msg: str):
-    print(f"✅ {msg}")
+    print(f" {msg}")
 
 def log_error(msg: str):
-    print(f"❌ {msg}")
+    print(f" {msg}")
 
 def install_package(package: str, pip_name: str = None) -> bool:
     """Instala um pacote Python se não estiver disponível"""
@@ -92,11 +92,11 @@ def main():
     
     print("\n" + "=" * 50)
     if success_count >= len(dependencies) + len(dbt_dependencies) - 1:  # -1 porque DBT pode falhar em alguns casos
-        log_success("✅ Dependências instaladas com sucesso!")
-        print("🚀 Pipeline pronto para execução")
+        log_success(" Dependências instaladas com sucesso!")
+        print(" Pipeline pronto para execução")
         return 0
     else:
-        log_error(f"❌ Algumas dependências falharam ({success_count} de {len(dependencies) + len(dbt_dependencies)})")
+        log_error(f" Algumas dependências falharam ({success_count} de {len(dependencies) + len(dbt_dependencies)})")
         print("🔧 Verifique os erros acima e instale manualmente se necessário")
         return 1
 

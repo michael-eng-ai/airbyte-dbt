@@ -11,19 +11,19 @@ NC='\033[0m' # No Color
 
 # Função para logs coloridos
 log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo -e "${BLUE}  $1${NC}"
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN} $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}  $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED} $1${NC}"
 }
 
 # Detectar diretório do script e ir para a raiz
@@ -128,21 +128,21 @@ if command -v docker &> /dev/null; then
 fi
 
 echo ""
-echo "🎉 FINALIZAÇÃO CONCLUÍDA!"
+echo " FINALIZAÇÃO CONCLUÍDA!"
 echo "========================="
 echo ""
-echo "📊 Status:"
-echo "   ✅ Processos Python parados"
-echo "   ✅ Containers Docker parados"
-echo "   ✅ Arquivos temporários limpos"
+echo " Status:"
+echo "    Processos Python parados"
+echo "    Containers Docker parados"
+echo "    Arquivos temporários limpos"
 echo ""
 echo "🔗 Portas liberadas:"
-echo "   ✅ 5430 (PostgreSQL)"
-echo "   ✅ 8501 (Dashboard)"
-echo "   ✅ 8001 (Airbyte)"
-echo "   ✅ 8080 (Airflow)"
+echo "    5430 (PostgreSQL)"
+echo "    8501 (Dashboard)"
+echo "    8001 (Airbyte)"
+echo "    8080 (Airflow)"
 echo ""
-echo "🚀 Para reiniciar: ./start_demo.sh"
+echo " Para reiniciar: ./start_demo.sh"
 echo ""
 
 log_success "Pipeline de dados finalizado com sucesso!" 

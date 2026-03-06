@@ -7,21 +7,26 @@ Trabalha em conjunto com o auto-configurador inteligente
 import subprocess
 import sys
 import os
+import logging
 from pathlib import Path
+from typing import Optional
 
-def log_info(msg: str):
-    print(f"ℹ️  {msg}")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s : %(message)s')
+logger = logging.getLogger("executor_dbt")
 
-def log_success(msg: str):
-    print(f"✅ {msg}")
+def log_info(msg: str) -> None:
+    logger.info(msg)
 
-def log_error(msg: str):
-    print(f"❌ {msg}")
+def log_success(msg: str) -> None:
+    logger.info(f"SUCCESS: {msg}")
 
-def log_warning(msg: str):
-    print(f"⚠️  {msg}")
+def log_error(msg: str) -> None:
+    logger.error(msg)
 
-def ensure_dbt_installed():
+def log_warning(msg: str) -> None:
+    logger.warning(msg)
+
+def ensure_dbt_installed() -> bool:
     """Verifica se DBT está instalado"""
     try:
         result = subprocess.run(["dbt", "--version"], capture_output=True, text=True)
@@ -166,8 +171,8 @@ def main():
     
     comando = sys.argv[1]
     
-    print("🛠️ EXECUTOR DBT PYTHON")
-    print("=" * 40)
+    logger.info(" EXECUTOR DBT PYTHON")
+    logger.info("=" * 40)
     
     # Garantir que DBT está instalado
     if not ensure_dbt_installed():
@@ -188,10 +193,10 @@ def main():
     
     # Executar comando DBT
     if run_dbt_command(comando):
-        log_success("✅ Execução DBT concluída!")
+        log_success(" Execução DBT concluída!")
         return 0
     else:
-        log_error("❌ Falha na execução DBT!")
+        log_error(" Falha na execução DBT!")
         return 1
 
 if __name__ == "__main__":

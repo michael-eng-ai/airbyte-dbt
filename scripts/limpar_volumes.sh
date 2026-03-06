@@ -4,12 +4,12 @@
 
 echo "🧹 LIMPEZA TOTAL DOS VOLUMES DOCKER"
 echo "=================================="
-echo "⚠️  Isso irá DELETAR todos os dados persistentes!"
+echo "  Isso irá DELETAR todos os dados persistentes!"
 echo ""
 
 read -p "🤔 Confirma a limpeza total? (s/N): " resposta
 if [[ ! $resposta =~ ^[Ss]$ ]]; then
-    echo "❌ Operação cancelada"
+    echo " Operação cancelada"
     exit 0
 fi
 
@@ -31,10 +31,10 @@ echo "🧹 Limpando containers orfãos..."
 docker container prune -f
 
 echo ""
-echo "✅ LIMPEZA CONCLUÍDA!"
-echo "   ✅ Containers parados"
-echo "   ✅ Volumes deletados" 
-echo "   ✅ Containers orfãos removidos"
+echo " LIMPEZA CONCLUÍDA!"
+echo "    Containers parados"
+echo "    Volumes deletados" 
+echo "    Containers orfãos removidos"
 echo ""
-echo "🚀 Agora execute: ./start_demo.sh"
+echo " Agora execute: ./start_demo.sh"
 echo "   Os scripts de inicialização irão executar automaticamente!" 

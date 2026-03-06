@@ -44,10 +44,10 @@ class DBTAutoConfigurator:
         print(f"🤖 AUTO-CONFIG: {msg}")
     
     def log_success(self, msg: str):
-        print(f"✅ {msg}")
+        print(f" {msg}")
     
     def log_warning(self, msg: str):
-        print(f"⚠️  {msg}")
+        print(f"  {msg}")
     
     def check_container_running(self, container_name: str) -> bool:
         """Verifica se container está rodando"""
@@ -204,7 +204,7 @@ class DBTAutoConfigurator:
         
         # 4. Verificar se funciona
         if self.verify_dbt_connection():
-            self.log_success("🎉 DBT auto-configurado com sucesso!")
+            self.log_success(" DBT auto-configurado com sucesso!")
             return True
         else:
             self.log_warning("DBT configurado, mas conexão falhou")
@@ -216,12 +216,12 @@ def main():
     success = configurator.run_auto_configuration()
     
     if success:
-        print("\n🚀 SISTEMA TOTALMENTE AUTOMATIZADO!")
+        print("\n SISTEMA TOTALMENTE AUTOMATIZADO!")
         print("   - Detecção automática de estado")
         print("   - Configuração dinâmica do DBT") 
         print("   - Zero intervenção manual necessária")
     else:
-        print("\n⚠️  Configuração aplicada, verificar logs acima")
+        print("\n  Configuração aplicada, verificar logs acima")
     
     return success
 

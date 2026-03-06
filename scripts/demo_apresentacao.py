@@ -23,11 +23,11 @@ class DemoOrchestrator:
         
         if self.dashboard_processo:
             self.dashboard_processo.terminate()
-            print("   ✅ Dashboard parado")
+            print("    Dashboard parado")
         
         if self.insersor_processo:
             self.insersor_processo.terminate()
-            print("   ✅ Insersor de dados parado")
+            print("    Insersor de dados parado")
         
         for processo in self.processos:
             try:
@@ -44,10 +44,10 @@ class DemoOrchestrator:
             import plotly
             import psycopg2
             import pandas
-            print("   ✅ Todas as dependências OK")
+            print("    Todas as dependências OK")
             return True
         except ImportError as e:
-            print(f"   ❌ Dependência faltando: {e}")
+            print(f"    Dependência faltando: {e}")
             print("   💡 Execute: python3 -m pip install -r requirements.txt")
             return False
     
@@ -59,13 +59,13 @@ class DemoOrchestrator:
             result = subprocess.run(['docker', 'compose', 'ps'], 
                                  capture_output=True, text=True)
             if 'postgres_source_db' in result.stdout:
-                print("   ✅ PostgreSQL rodando")
+                print("    PostgreSQL rodando")
                 return True
             else:
-                print("   ❌ PostgreSQL não encontrado")
+                print("    PostgreSQL não encontrado")
                 return False
         except:
-            print("   ❌ Docker não encontrado")
+            print("    Docker não encontrado")
             return False
     
     def executar_dbt(self):
@@ -78,23 +78,23 @@ class DemoOrchestrator:
                 'docker', 'compose', 'exec', '-T', 'dbt_runner', 
                 'dbt', 'run', '--select', 'tag:bronze'
             ], check=True)
-            print("   ✅ Modelos Bronze executados")
+            print("    Modelos Bronze executados")
             
             # Silver
             subprocess.run([
                 'docker', 'compose', 'exec', '-T', 'dbt_runner', 
                 'dbt', 'run', '--select', 'tag:silver'
             ], check=True)
-            print("   ✅ Modelos Silver executados")
+            print("    Modelos Silver executados")
             
             return True
         except subprocess.CalledProcessError:
-            print("   ❌ Erro ao executar DBT")
+            print("    Erro ao executar DBT")
             return False
     
     def iniciar_dashboard(self):
         """Inicia o dashboard Streamlit"""
-        print("📊 Iniciando dashboard...")
+        print(" Iniciando dashboard...")
         
         try:
             self.dashboard_processo = subprocess.Popen([
@@ -105,10 +105,10 @@ class DemoOrchestrator:
             ])
             
             time.sleep(3)  # Aguarda inicialização
-            print("   ✅ Dashboard disponível em: http://localhost:8501")
+            print("    Dashboard disponível em: http://localhost:8501")
             return True
         except Exception as e:
-            print(f"   ❌ Erro ao iniciar dashboard: {e}")
+            print(f"    Erro ao iniciar dashboard: {e}")
             return False
     
     def iniciar_insersor(self):
@@ -121,10 +121,10 @@ class DemoOrchestrator:
             ])
             
             time.sleep(2)
-            print("   ✅ Simulador de dados ativo")
+            print("    Simulador de dados ativo")
             return True
         except Exception as e:
-            print(f"   ❌ Erro ao iniciar simulador: {e}")
+            print(f"    Erro ao iniciar simulador: {e}")
             return False
     
     def mostrar_status(self):
@@ -132,9 +132,9 @@ class DemoOrchestrator:
         print("\n" + "="*60)
         print("🎬 DEMONSTRAÇÃO ATIVA - STATUS")
         print("="*60)
-        print("📊 Dashboard: http://localhost:8501")
+        print(" Dashboard: http://localhost:8501")
         print("📥 Dados sendo inseridos automaticamente")
-        print("🔄 Pipeline DBT executado e funcionando")
+        print(" Pipeline DBT executado e funcionando")
         print("💾 PostgreSQL com dados em tempo real")
         print("="*60)
         print("⏱️  A demonstração continuará até você pressionar Ctrl+C")
@@ -174,7 +174,7 @@ class DemoOrchestrator:
             # Loop infinito - aguarda Ctrl+C
             while True:
                 time.sleep(60)  # Atualiza status a cada minuto
-                print(f"🔄 {datetime.now().strftime('%H:%M:%S')} - Demonstração ativa...")
+                print(f" {datetime.now().strftime('%H:%M:%S')} - Demonstração ativa...")
                 
         except KeyboardInterrupt:
             print(f"\n\n⏹️  Demonstração finalizada pelo usuário")
@@ -196,14 +196,14 @@ class DemoOrchestrator:
         # Só executa DBT e mostra dados
         self.executar_dbt()
         
-        print("\n📊 Executando visualização...")
+        print("\n Executando visualização...")
         try:
             subprocess.run(['python3', 'visualizar_pipeline.py'], check=True)
         except subprocess.CalledProcessError:
-            print("❌ Erro na visualização")
+            print(" Erro na visualização")
             return False
         
-        print("\n✅ Demo rápida concluída!")
+        print("\n Demo rápida concluída!")
         return True
 
 def signal_handler(sig, frame):

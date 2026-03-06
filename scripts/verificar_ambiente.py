@@ -28,25 +28,25 @@ class EnvironmentChecker:
         
     def log_info(self, msg):
         timestamp = datetime.now().strftime('%H:%M:%S')
-        log_msg = f"[{timestamp}] ℹ️  {msg}"
+        log_msg = f"[{timestamp}]   {msg}"
         print(log_msg)
         self.logs.append({"timestamp": timestamp, "level": "INFO", "message": msg})
         
     def log_success(self, msg):
         timestamp = datetime.now().strftime('%H:%M:%S')
-        log_msg = f"[{timestamp}] ✅ {msg}"
+        log_msg = f"[{timestamp}]  {msg}"
         print(log_msg)
         self.logs.append({"timestamp": timestamp, "level": "SUCCESS", "message": msg})
         
     def log_warning(self, msg):
         timestamp = datetime.now().strftime('%H:%M:%S')
-        log_msg = f"[{timestamp}] ⚠️  {msg}"
+        log_msg = f"[{timestamp}]   {msg}"
         print(log_msg)
         self.logs.append({"timestamp": timestamp, "level": "WARNING", "message": msg})
         
     def log_error(self, msg):
         timestamp = datetime.now().strftime('%H:%M:%S')
-        log_msg = f"[{timestamp}] ❌ {msg}"
+        log_msg = f"[{timestamp}]  {msg}"
         print(log_msg)
         self.logs.append({"timestamp": timestamp, "level": "ERROR", "message": msg})
         
@@ -351,7 +351,7 @@ class EnvironmentChecker:
         # Sucesso!
         duration = datetime.now() - self.start_time
         self.log_success(f"Ambiente verificado com sucesso em {duration}")
-        print("\n🎉 AMBIENTE PRONTO PARA PIPELINE!")
+        print("\n AMBIENTE PRONTO PARA PIPELINE!")
         print("=" * 60)
         
         return True
@@ -362,10 +362,10 @@ def main():
     try:
         success = checker.comprehensive_check()
         if success:
-            print("\n✅ Ambiente OK - Pipeline pode prosseguir")
+            print("\n Ambiente OK - Pipeline pode prosseguir")
             sys.exit(0)
         else:
-            print("\n❌ Ambiente com problemas - Verifique os logs")
+            print("\n Ambiente com problemas - Verifique os logs")
             sys.exit(1)
     except KeyboardInterrupt:
         checker.log_warning("Verificação interrompida pelo usuário")

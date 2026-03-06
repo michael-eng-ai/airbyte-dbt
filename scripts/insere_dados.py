@@ -42,7 +42,7 @@ def conectar_db():
         conn.autocommit = True
         return conn
     except Exception as e:
-        print(f"❌ Erro ao conectar ao banco: {e}")
+        print(f" Erro ao conectar ao banco: {e}")
         return None
 
 def gerar_email(nome):
@@ -70,7 +70,7 @@ def inserir_cliente(conn):
         return cliente_id
         
     except Exception as e:
-        print(f"❌ Erro ao inserir cliente: {e}")
+        print(f" Erro ao inserir cliente: {e}")
         return None
 
 def inserir_pedido(conn, cliente_id=None):
@@ -82,7 +82,7 @@ def inserir_pedido(conn, cliente_id=None):
             cur.execute("SELECT id FROM public.clientes ORDER BY RANDOM() LIMIT 1")
             result = cur.fetchone()
             if not result:
-                print("❌ Nenhum cliente disponível para pedido")
+                print(" Nenhum cliente disponível para pedido")
                 return None
             cliente_id = result[0]
         
@@ -103,11 +103,11 @@ def inserir_pedido(conn, cliente_id=None):
         
         pedido_id = cur.fetchone()[0]
         valor_total = quantidade * preco_unitario
-        print(f"🛒 Pedido inserido: ID {pedido_id} - Cliente {cliente_id} - {produto} (Qtd: {quantidade}, Total: R$ {valor_total:.2f})")
+        print(f" Pedido inserido: ID {pedido_id} - Cliente {cliente_id} - {produto} (Qtd: {quantidade}, Total: R$ {valor_total:.2f})")
         return pedido_id
         
     except Exception as e:
-        print(f"❌ Erro ao inserir pedido: {e}")
+        print(f" Erro ao inserir pedido: {e}")
         return None
 
 def atualizar_cliente(conn):
@@ -130,11 +130,11 @@ def atualizar_cliente(conn):
             WHERE id = %s
         """, (novo_email, datetime.now(), cliente_id))
         
-        print(f"🔄 Cliente atualizado: ID {cliente_id} - Email: {email_atual} → {novo_email}")
+        print(f" Cliente atualizado: ID {cliente_id} - Email: {email_atual} → {novo_email}")
         return cliente_id
         
     except Exception as e:
-        print(f"❌ Erro ao atualizar cliente: {e}")
+        print(f" Erro ao atualizar cliente: {e}")
         return None
 
 def mostrar_estatisticas(conn):
@@ -163,21 +163,21 @@ def mostrar_estatisticas(conn):
         """)
         ultimo_pedido = cur.fetchone()
         
-        print(f"\n📊 ESTATÍSTICAS ATUAIS:")
+        print(f"\n ESTATÍSTICAS ATUAIS:")
         print(f"   👥 Clientes: {total_clientes}")
-        print(f"   🛒 Pedidos: {total_pedidos}")
+        print(f"    Pedidos: {total_pedidos}")
         print(f"   💰 Receita Total: R$ {receita_total:.2f}")
         if ultimo_pedido:
             print(f"   🔥 Último Pedido: ID {ultimo_pedido[0]} - {ultimo_pedido[1]} - {ultimo_pedido[2]} (R$ {ultimo_pedido[3]:.2f})")
         print("-" * 60)
         
     except Exception as e:
-        print(f"❌ Erro ao mostrar estatísticas: {e}")
+        print(f" Erro ao mostrar estatísticas: {e}")
 
 def main():
     print("🎬 SIMULADOR DE DADOS EM TEMPO REAL")
     print("==================================")
-    print("🎯 Objetivo: Demonstrar CDC e Pipeline funcionando")
+    print(" Objetivo: Demonstrar CDC e Pipeline funcionando")
     print("⏱️  Pressione Ctrl+C para parar\n")
     
     # Conectar ao banco
@@ -189,7 +189,7 @@ def main():
         ciclo = 0
         while True:
             ciclo += 1
-            print(f"\n🔄 CICLO {ciclo} - {datetime.now().strftime('%H:%M:%S')}")
+            print(f"\n CICLO {ciclo} - {datetime.now().strftime('%H:%M:%S')}")
             
             # Decisão aleatória do que fazer
             acao = random.choices(
@@ -229,7 +229,7 @@ def main():
         mostrar_estatisticas(conn)
         
     except Exception as e:
-        print(f"❌ Erro durante simulação: {e}")
+        print(f" Erro durante simulação: {e}")
         
     finally:
         conn.close()

@@ -1,6 +1,6 @@
-# 🚀 Pipeline CDC Completo - Airbyte + DBT
+#  Pipeline CDC Completo - Airbyte + DBT
 
-## 📋 **Visão Geral**
+##  **Visão Geral**
 
 Pipeline de dados moderno implementando **Change Data Capture (CDC)** com:
 - **PostgreSQL Source** → Dados originais com CDC habilitado
@@ -10,7 +10,7 @@ Pipeline de dados moderno implementando **Change Data Capture (CDC)** com:
 - **MinIO** → Data Lake S3-compatible
 - **APIs Simuladas** → Fontes de dados externas
 
-## 🔐 **Credenciais Padronizadas**
+##  **Credenciais Padronizadas**
 
 **Todos os serviços usam:**
 ```
@@ -18,21 +18,21 @@ Usuário: admin
 Senha: admin
 ```
 
-## 🎯 **Início Rápido**
+##  **Início Rápido**
 
-### 1️⃣ **Executar Pipeline Completo**
+###  **Executar Pipeline Completo**
 ```bash
 ./start_pipeline.sh
 ```
 
-### 2️⃣ **Configurar Airbyte CDC (Manual)**
+###  **Configurar Airbyte CDC (Manual)**
 1. Abra http://localhost:8080
 2. Configure Source: PostgreSQL `localhost:5430` (admin/admin)
 3. Configure Target: PostgreSQL `localhost:5431` (admin/admin)
 4. Ative CDC para tabelas: `clientes`, `pedidos`, `produtos`, `leads`
 5. Inicie sincronização
 
-### 3️⃣ **Executar DBT (Após CDC configurado)**
+###  **Executar DBT (Após CDC configurado)**
 ```bash
 python3 scripts/executar_dbt.py debug    # Testar conexão
 python3 scripts/executar_dbt.py bronze   # Modelos bronze
@@ -41,11 +41,11 @@ python3 scripts/executar_dbt.py gold     # Modelos gold
 python3 scripts/executar_dbt.py full     # Pipeline completo
 ```
 
-### 4️⃣ **Limpeza Completa (quando quiser resetar tudo)**
+###  **Limpeza Completa (quando quiser resetar tudo)**
 ```bash
 ./clean_docker_environment.sh
 ```
-**⚠️ CUIDADO:** Remove TUDO - containers, volumes, dados, configurações!
+** CUIDADO:** Remove TUDO - containers, volumes, dados, configurações!
 
 ## ��️ **Arquitetura**
 
@@ -67,7 +67,7 @@ python3 scripts/executar_dbt.py full     # Pipeline completo
 5. Dashboard Streamlit
 ```
 
-## 📊 **Estrutura de Dados**
+##  **Estrutura de Dados**
 
 ### **Tabelas Principais:**
 - **clientes** - Dados de clientes com perfil empresarial
@@ -78,11 +78,11 @@ python3 scripts/executar_dbt.py full     # Pipeline completo
 - **leads** - Leads gerados pelas campanhas
 
 ### **Camadas DBT:**
-- **🥉 Bronze** - Dados brutos replicados via Airbyte
-- **🥈 Silver** - Dados limpos e padronizados
-- **🥇 Gold** - Agregações e métricas de negócio
+- ** Bronze** - Dados brutos replicados via Airbyte
+- ** Silver** - Dados limpos e padronizados
+- ** Gold** - Agregações e métricas de negócio
 
-## 🌐 **URLs dos Serviços**
+##  **URLs dos Serviços**
 
 | Serviço | URL | Credenciais |
 |---------|-----|-------------|
@@ -93,7 +93,7 @@ python3 scripts/executar_dbt.py full     # Pipeline completo
 | **E-commerce API** | http://localhost:8010 | - |
 | **CRM API** | http://localhost:8011 | - |
 
-## 🛠️ **Comandos Úteis**
+##  **Comandos Úteis**
 
 ### **Verificar Status**
 ```bash
@@ -125,10 +125,10 @@ cd config && docker compose exec dbt_runner dbt debug
 cd config && docker compose down --remove-orphans
 ```
 
-## 📁 **Estrutura do Projeto**
+##  **Estrutura do Projeto**
 
 ```
-├── start_pipeline.sh              # 🎯 Script principal
+├── start_pipeline.sh              #  Script principal
 ├── config/
 │   ├── env.config                 # Variáveis centralizadas
 │   ├── docker-compose.yml         # Configuração completa
@@ -147,7 +147,7 @@ cd config && docker compose down --remove-orphans
 └── apis_simuladas/              # APIs de dados externos
 ```
 
-## 🚨 **Troubleshooting**
+##  **Troubleshooting**
 
 ### **Problema: "role admin does not exist"**
 ```bash
@@ -175,14 +175,14 @@ killall postgres
 docker compose down --remove-orphans
 ```
 
-## 🔄 **Fluxo CDC Completo**
+##  **Fluxo CDC Completo**
 
-1. **📝 APIs inserem dados** → PostgreSQL Source
-2. **🔄 Airbyte captura CDC** → Replica para Target  
-3. **🛠️ DBT processa** → Bronze → Silver → Gold
-4. **📊 Dashboard consome** → Dados transformados
+1. ** APIs inserem dados** → PostgreSQL Source
+2. ** Airbyte captura CDC** → Replica para Target  
+3. ** DBT processa** → Bronze → Silver → Gold
+4. ** Dashboard consome** → Dados transformados
 
-## 🎯 **Próximos Passos**
+##  **Próximos Passos**
 
 1. Execute `./start_pipeline.sh`
 2. Configure Airbyte CDC no browser  
@@ -192,4 +192,4 @@ docker compose down --remove-orphans
 
 ---
 
-**🎉 Pipeline CDC pronto para produção com credenciais admin/admin!**
+** Pipeline CDC pronto para produção com credenciais admin/admin!**

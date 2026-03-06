@@ -14,23 +14,23 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-log_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
-log_success() { echo -e "${GREEN}✅ $1${NC}"; }
-log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
-log_error() { echo -e "${RED}❌ $1${NC}"; }
+log_info() { echo -e "${BLUE}  $1${NC}"; }
+log_success() { echo -e "${GREEN} $1${NC}"; }
+log_warning() { echo -e "${YELLOW}  $1${NC}"; }
+log_error() { echo -e "${RED} $1${NC}"; }
 log_step() { echo -e "${PURPLE}🧹 ETAPA $1${NC}"; }
 log_highlight() { echo -e "${CYAN}💥 $1${NC}"; }
 
 echo ""
 echo "🧹 LIMPEZA COMPLETA DO AMBIENTE DOCKER"
 echo "======================================"
-echo "⚠️  ATENÇÃO: Isso vai APAGAR TUDO relacionado ao projeto!"
+echo "  ATENÇÃO: Isso vai APAGAR TUDO relacionado ao projeto!"
 echo "📦 Containers, volumes, redes, imagens e dados"
-echo "🔐 Você terá que refazer toda a configuração depois"
+echo " Você terá que refazer toda a configuração depois"
 echo ""
 
 # Confirmação de segurança
-read -p "🚨 Tem certeza que quer limpar TUDO? (digite 'LIMPAR' para confirmar): " confirmacao
+read -p " Tem certeza que quer limpar TUDO? (digite 'LIMPAR' para confirmar): " confirmacao
 
 if [ "$confirmacao" != "LIMPAR" ]; then
     log_info "Operação cancelada pelo usuário"
@@ -210,7 +210,7 @@ docker system prune -f 2>/dev/null || true
 # Verificação final
 log_info "Verificando estado final..."
 echo ""
-echo "📊 ESTADO FINAL:"
+echo " ESTADO FINAL:"
 echo "Containers ativos: $(docker ps -q | wc -l)"
 echo "Volumes: $(docker volume ls -q | wc -l)"
 echo "Redes customizadas: $(docker network ls --filter type=custom -q | wc -l)"
@@ -220,9 +220,9 @@ echo "Imagens: $(docker images -q | wc -l)"
 # RESULTADO FINAL
 # ============================================================================
 echo ""
-log_highlight "🎉 LIMPEZA COMPLETA FINALIZADA!"
+log_highlight " LIMPEZA COMPLETA FINALIZADA!"
 echo ""
-log_success "✅ TUDO FOI REMOVIDO:"
+log_success " TUDO FOI REMOVIDO:"
 echo "   🗑️ Containers do projeto removidos"
 echo "   🗑️ Volumes e dados persistentes apagados"
 echo "   🗑️ Redes customizadas removidas"
@@ -232,13 +232,13 @@ echo "   🗑️ Imagens do projeto removidas"
 fi
 
 echo ""
-log_highlight "🚀 PRÓXIMOS PASSOS:"
+log_highlight " PRÓXIMOS PASSOS:"
 echo "1. Para recriar o ambiente: ./start_pipeline.sh"
 echo "2. Todos os dados e configurações precisarão ser refeitos"
 echo "3. Airbyte, MinIO e outras configurações voltarão ao zero"
 
 echo ""
-log_warning "⚠️ LEMBRE-SE: Isso foi uma limpeza COMPLETA!"
+log_warning " LEMBRE-SE: Isso foi uma limpeza COMPLETA!"
 log_info "Use este script apenas quando quiser realmente recomeçar do zero."
 
 echo "" 

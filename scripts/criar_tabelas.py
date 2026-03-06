@@ -10,13 +10,13 @@ import os
 from datetime import datetime
 
 def log_info(msg):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] ℹ️  {msg}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}]   {msg}")
 
 def log_success(msg):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ {msg}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}]  {msg}")
 
 def log_error(msg):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ {msg}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}]  {msg}")
 
 def get_sql_init_script():
     """Retorna o conteúdo do arquivo SQL de inicialização"""
@@ -147,7 +147,7 @@ def insert_sample_data(connection_config):
 
 def main():
     """Função principal"""
-    log_info("🚀 CRIADOR DE TABELAS POSTGRESQL")
+    log_info(" CRIADOR DE TABELAS POSTGRESQL")
     log_info("=" * 50)
     
     # Configuração da conexão com credenciais padronizadas
@@ -178,7 +178,7 @@ def main():
         log_error("Falha na inserção de dados de exemplo")
         # Não retornar False aqui - dados de exemplo são opcionais
     
-    log_success("🎉 Inicialização do banco concluída com sucesso!")
+    log_success(" Inicialização do banco concluída com sucesso!")
     return True
 
 if __name__ == "__main__":

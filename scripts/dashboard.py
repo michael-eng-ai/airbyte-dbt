@@ -15,7 +15,7 @@ import time
 # Configuração da página
 st.set_page_config(
     page_title="Pipeline de Dados - Dashboard",
-    page_icon="📊",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -43,12 +43,12 @@ def conectar_e_consultar(query):
 
 def main():
     # Header
-    st.title("📊 Pipeline de Dados - Dashboard em Tempo Real")
-    st.markdown("**🎯 Demonstração de CDC e Transformações DBT**")
+    st.title(" Pipeline de Dados - Dashboard em Tempo Real")
+    st.markdown("** Demonstração de CDC e Transformações DBT**")
     
     # Sidebar com controles
-    st.sidebar.header("⚙️ Configurações")
-    auto_refresh = st.sidebar.checkbox("🔄 Auto-refresh (5s)", value=True)
+    st.sidebar.header(" Configurações")
+    auto_refresh = st.sidebar.checkbox(" Auto-refresh (5s)", value=True)
     
     if auto_refresh:
         # Auto-refresh usando rerun
@@ -81,7 +81,7 @@ def main():
         
         with col2:
             st.metric(
-                label="🛒 Total Pedidos", 
+                label=" Total Pedidos", 
                 value=int(df_metricas['total_pedidos'].iloc[0]),
                 delta=None
             )
@@ -95,13 +95,13 @@ def main():
         
         with col4:
             st.metric(
-                label="🎯 Ticket Médio",
+                label=" Ticket Médio",
                 value=f"R$ {df_metricas['ticket_medio'].iloc[0]:,.2f}",
                 delta=None
             )
 
     # ====== GRÁFICOS ======
-    st.header("📊 Análises Visuais")
+    st.header(" Análises Visuais")
     
     # Row 1: Vendas por Cliente e por Produto
     col1, col2 = st.columns(2)
@@ -241,7 +241,7 @@ def main():
             st.info("Nenhum cliente encontrado")
     
     with col2:
-        st.subheader("🛒 Últimos Pedidos")
+        st.subheader(" Últimos Pedidos")
         query_ultimos_pedidos = """
         SELECT 
             p.id,
@@ -265,7 +265,7 @@ def main():
             st.info("Nenhum pedido encontrado")
     
     # ====== STATUS DO PIPELINE ======
-    st.header("⚙️ Status do Pipeline DBT")
+    st.header(" Status do Pipeline DBT")
     
     # Verificar se as tabelas DBT existem
     query_pipeline_status = """
@@ -297,7 +297,7 @@ def main():
         
         for i, (col, row) in enumerate(zip([col1, col2, col3, col4], df_pipeline.itertuples())):
             with col:
-                camada = "🟤 Bronze" if "bronze" in row.tabela else "🥈 Silver"
+                camada = "🟤 Bronze" if "bronze" in row.tabela else " Silver"
                 st.metric(
                     label=f"{camada}",
                     value=f"{row.registros} registros",

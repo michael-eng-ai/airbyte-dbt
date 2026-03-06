@@ -38,16 +38,16 @@ class AirbyteAutomator:
         self.connection_id = None
         
     def log_info(self, msg: str):
-        print(f"ℹ️  {msg}")
+        print(f"  {msg}")
         
     def log_success(self, msg: str):
-        print(f"✅ {msg}")
+        print(f" {msg}")
         
     def log_error(self, msg: str):
-        print(f"❌ {msg}")
+        print(f" {msg}")
         
     def log_warning(self, msg: str):
-        print(f"⚠️  {msg}")
+        print(f"  {msg}")
 
     def wait_for_airbyte(self, max_attempts: int = 30) -> bool:
         """Aguarda Airbyte estar disponível"""
@@ -306,7 +306,7 @@ class AirbyteAutomator:
 
     def setup_complete_pipeline(self) -> bool:
         """Executa configuração completa do pipeline"""
-        self.log_info("🚀 INICIANDO CONFIGURAÇÃO AUTOMÁTICA DO AIRBYTE")
+        self.log_info(" INICIANDO CONFIGURAÇÃO AUTOMÁTICA DO AIRBYTE")
         print("=" * 50)
         
         # 1. Aguardar Airbyte disponível
@@ -339,10 +339,10 @@ class AirbyteAutomator:
         if not self.trigger_sync():
             return False
             
-        self.log_success("🎉 CONFIGURAÇÃO AUTOMÁTICA CONCLUÍDA!")
+        self.log_success(" CONFIGURAÇÃO AUTOMÁTICA CONCLUÍDA!")
         print("=" * 50)
-        self.log_info(f"📊 Connection ID: {self.connection_id}")
-        self.log_info(f"🌐 Acesse http://localhost:{AIRBYTE_SERVER_PORT} para monitorar")
+        self.log_info(f" Connection ID: {self.connection_id}")
+        self.log_info(f" Acesse http://localhost:{AIRBYTE_SERVER_PORT} para monitorar")
         
         return True
 
@@ -351,12 +351,12 @@ def main():
     automator = AirbyteAutomator()
     
     if automator.setup_complete_pipeline():
-        print("\n✅ Pipeline CDC configurado automaticamente!")
-        print("🔄 Dados sendo sincronizados do Source para Target")
-        print("🛠️ Agora execute: python3 scripts/executar_dbt.py full")
+        print("\n Pipeline CDC configurado automaticamente!")
+        print(" Dados sendo sincronizados do Source para Target")
+        print(" Agora execute: python3 scripts/executar_dbt.py full")
         return 0
     else:
-        print("\n❌ Falha na configuração automática do Airbyte")
+        print("\n Falha na configuração automática do Airbyte")
         print("🔧 Verificar logs acima e configurar manualmente se necessário")
         return 1
 

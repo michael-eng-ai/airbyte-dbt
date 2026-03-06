@@ -24,7 +24,7 @@ def conectar_db():
         conn.autocommit = True
         return conn
     except Exception as e:
-        print(f"❌ Erro ao conectar ao banco: {e}")
+        print(f" Erro ao conectar ao banco: {e}")
         return None
 
 def inserir_dados_ficticios():
@@ -66,18 +66,18 @@ def inserir_dados_ficticios():
                 datetime.now() - timedelta(days=random.randint(0, 30))
             ))
         
-        print("✅ Dados fictícios inseridos com sucesso")
+        print(" Dados fictícios inseridos com sucesso")
         return True
         
     except Exception as e:
-        print(f"❌ Erro ao inserir dados: {e}")
+        print(f" Erro ao inserir dados: {e}")
         return False
     finally:
         conn.close()
 
 if __name__ == "__main__":
-    print("🔄 Populando banco com dados fictícios...")
+    print(" Populando banco com dados fictícios...")
     if inserir_dados_ficticios():
-        print("✅ Processo concluído")
+        print(" Processo concluído")
     else:
-        print("❌ Processo falhou")
+        print(" Processo falhou")

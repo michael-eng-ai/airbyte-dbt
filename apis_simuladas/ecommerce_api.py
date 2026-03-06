@@ -14,6 +14,11 @@ from datetime import datetime, timedelta
 from faker import Faker
 import time
 import threading
+import logging
+from typing import Dict, Any
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s : %(message)s')
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="E-commerce API", version="1.0.0")
 fake = Faker('pt_BR')
@@ -120,15 +125,15 @@ def simular_vendas():
                 
                 venda_id_counter += 1
                 
-                print(f"🛒 Nova venda: {venda['id']} - {produto['nome']} - R$ {venda['valor_total']}")
+                logger.info(f" Nova venda: {venda['id']} - {produto['nome']} - R$ {venda['valor_total']}")
         
         # Aguardar entre 3 a 10 segundos
         time.sleep(random.uniform(3, 10))
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Inicialização da API"""
-    print("🚀 Iniciando API E-commerce...")
+    logger.info(" Iniciando API E-commerce...")
     gerar_produtos_iniciais()
     gerar_clientes_iniciais()
     
@@ -136,15 +141,15 @@ async def startup_event():
     simulator_thread = threading.Thread(target=simular_vendas, daemon=True)
     simulator_thread.start()
     
-    print("✅ API E-commerce iniciada com sucesso!")
+    logger.info(" API E-commerce iniciada com sucesso!")
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, str]:
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 @app.get("/")
-async def root():
+async def root() -> Dict[str, Any]:
     """Endpoint raiz"""
     return {
         "service": "E-commerce API",
@@ -159,7 +164,7 @@ async def root():
     }
 
 @app.get("/produtos")
-async def listar_produtos(limit: int = 100, categoria: str = None):
+async def listar_produtos(limit: int = 100, categoria: str = "") -> Dict[str, Any]:
     """Lista produtos"""
     produtos = produtos_db[:limit]
     
@@ -173,7 +178,7 @@ async def listar_produtos(limit: int = 100, categoria: str = None):
     }
 
 @app.get("/vendas")
-async def listar_vendas(limit: int = 100, data_inicio: str = None):
+async def listar_vendas(limit: int = 100, data_inicio: str = "") -> Dict[str, Any]:
     """Lista vendas"""
     vendas = vendas_db
     
@@ -190,7 +195,7 @@ async def listar_vendas(limit: int = 100, data_inicio: str = None):
     }
 
 @app.get("/clientes")
-async def listar_clientes(limit: int = 100, vip_only: bool = False):
+async def listar_clientes(limit: int = 100, vip_only: bool = False) -> Dict[str, Any]:
     """Lista clientes"""
     clientes = clientes_ecommerce_db
     
@@ -206,7 +211,7 @@ async def listar_clientes(limit: int = 100, vip_only: bool = False):
     }
 
 @app.get("/stats")
-async def estatisticas():
+async def estatisticas() -> Dict[str, Any]:
     """Estatísticas do e-commerce"""
     total_vendas = len(vendas_db)
     receita_total = sum(v['valor_total'] for v in vendas_db)
@@ -238,5 +243,5 @@ async def estatisticas():
     }
 
 if __name__ == "__main__":
-    print("🚀 Iniciando API E-commerce na porta 8000...")
+    logger.info(" Iniciando API E-commerce na porta 8000...")
     uvicorn.run(app, host="0.0.0.0", port=8000) 

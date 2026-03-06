@@ -314,16 +314,16 @@ log_highlight "PIPELINE AUTOMATIZADO E DEMONSTRAÇÃO INICIADOS!"
 
 echo ""
 log_highlight "🖥️  PÁGINAS WEB ABERTAS:"
-echo "📊 Dashboard Streamlit: http://localhost:8501"
-echo "🔄 Airbyte Web UI: http://localhost:${AIRBYTE_WEBAPP_PORT}"
+echo " Dashboard Streamlit: http://localhost:8501"
+echo " Airbyte Web UI: http://localhost:${AIRBYTE_WEBAPP_PORT}"
 echo "🐘 PostgreSQL Source: localhost:${POSTGRES_SOURCE_PORT}"
 echo "🐘 PostgreSQL Target: localhost:${POSTGRES_TARGET_PORT}"
 
 echo ""
 log_highlight "🤖 PROCESSOS ATIVOS:"
-echo "✅ Dashboard rodando (PID: ${DASHBOARD_PID:-N/A})"
-echo "✅ Insersor de dados rodando (PID: ${INSERSOR_PID:-N/A})"
-echo "✅ DBT auto-configurado e pronto"
+echo " Dashboard rodando (PID: ${DASHBOARD_PID:-N/A})"
+echo " Insersor de dados rodando (PID: ${INSERSOR_PID:-N/A})"
+echo " DBT auto-configurado e pronto"
 
 if [ "$AIRBYTE_AUTO_SUCCESS" = true ]; then
     echo ""
@@ -339,7 +339,7 @@ else
 fi
 
 echo ""
-log_highlight "🎯 DEMONSTRAÇÃO DO PIPELINE:"
+log_highlight " DEMONSTRAÇÃO DO PIPELINE:"
 echo "1. Dashboard mostra dados em tempo real"
 echo "2. Insersor adiciona novos dados continuamente"
 echo "3. Airbyte replica dados via CDC (quando configurado)"
@@ -347,7 +347,7 @@ echo "4. DBT transforma dados automaticamente"
 echo "5. Visualize as mudanças no Dashboard!"
 
 echo ""
-log_highlight "📝 COMANDOS ÚTEIS:"
+log_highlight " COMANDOS ÚTEIS:"
 echo "Ver logs do insersor: tail -f /tmp/insere_dados.log"
 echo "Parar insersor: kill $INSERSOR_PID"
 echo "Parar dashboard: kill $DASHBOARD_PID"

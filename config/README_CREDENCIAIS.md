@@ -1,6 +1,6 @@
-# 🔐 SISTEMA DE CREDENCIAIS CENTRALIZADO
+#  SISTEMA DE CREDENCIAIS CENTRALIZADO
 
-## 📋 Credenciais Padronizadas
+##  Credenciais Padronizadas
 
 **Todas as credenciais foram padronizadas para facilitar o uso:**
 
@@ -26,7 +26,7 @@ Senha: admin
 - Usa variáveis de `env.config` automaticamente
 - Valores padrão incorporados (fallback)
 
-## 🚀 Serviços e Credenciais
+##  Serviços e Credenciais
 
 ### 🐘 PostgreSQL Source (Dados originais)
 ```
@@ -44,7 +44,7 @@ Senha: admin
 Database: db_target
 ```
 
-### 🔄 Airbyte (CDC Engine)
+###  Airbyte (CDC Engine)
 ```
 UI: http://localhost:8080
 Usuário: admin (default no Airbyte)
@@ -59,7 +59,7 @@ Usuário: admin
 Senha: admin
 ```
 
-### 🛠️ DBT (Transformações)
+###  DBT (Transformações)
 ```
 Conecta automaticamente no PostgreSQL Target
 Usuário: admin
@@ -67,7 +67,7 @@ Senha: admin
 Database: db_target
 ```
 
-### 🌐 APIs Externas
+###  APIs Externas
 ```
 E-commerce API: http://localhost:8010
 CRM API: http://localhost:8011
@@ -103,7 +103,7 @@ psql -h localhost -p 5431 -U admin -d db_target
 docker compose exec dbt_runner dbt debug
 ```
 
-## 🛠️ Personalizações
+##  Personalizações
 
 ### Alterar Credenciais
 1. Edite `config/env.config`
@@ -143,7 +143,7 @@ docker compose logs airbyte-server
 docker compose logs dbt_runner
 ```
 
-## 📊 Pipeline Completo
+##  Pipeline Completo
 
 1. **Source Database** → Dados originais (admin/admin)
 2. **Airbyte** → Replicação CDC (admin/admin)
@@ -151,4 +151,4 @@ docker compose logs dbt_runner
 4. **DBT** → Transformações (admin/admin)
 5. **MinIO** → Data Lake (admin/admin)
 
-**Todos os componentes usam as mesmas credenciais para simplicidade!** 🎯 
+**Todos os componentes usam as mesmas credenciais para simplicidade!**  
