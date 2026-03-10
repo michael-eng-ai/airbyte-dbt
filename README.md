@@ -1,195 +1,136 @@
-#  Pipeline CDC Completo - Airbyte + DBT
+# kafka-debezium-dbt — Pipeline CDC em Tempo Real
 
-##  **Visão Geral**
+Pipeline de dados moderno implementando **Change Data Capture (CDC)** com baixa latência via Kafka e Debezium, transformações em camadas via dbt e visualização em tempo real com Streamlit.
 
-Pipeline de dados moderno implementando **Change Data Capture (CDC)** com:
-- **PostgreSQL Source** → Dados originais com CDC habilitado
-- **Airbyte** → Engine de replicação em tempo real  
-- **PostgreSQL Target** → Destino da replicação
-- **DBT** → Transformações de dados (Bronze → Silver → Gold)
-- **MinIO** → Data Lake S3-compatible
-- **APIs Simuladas** → Fontes de dados externas
+## Arquitetura
 
-##  **Credenciais Padronizadas**
-
-**Todos os serviços usam:**
 ```
-Usuário: admin
-Senha: admin
-```
-
-##  **Início Rápido**
-
-###  **Executar Pipeline Completo**
-```bash
-./start_pipeline.sh
+PostgreSQL Source  ──(WAL)──▶  Debezium (Kafka Connect)
+                                        │
+                               Kafka Topics (dbserver1.public.*)
+                                        │
+                              kafka_consumer.py (UPSERT)
+                                        │
+                              PostgreSQL Target (db_target)
+                                        │
+                              dbt run (Bronze → Silver → Gold)
+                                        │
+                              Streamlit Dashboard (localhost:8501)
 ```
 
-###  **Configurar Airbyte CDC (Manual)**
-1. Abra http://localhost:8080
-2. Configure Source: PostgreSQL `localhost:5430` (admin/admin)
-3. Configure Target: PostgreSQL `localhost:5431` (admin/admin)
-4. Ative CDC para tabelas: `clientes`, `pedidos`, `produtos`, `leads`
-5. Inicie sincronização
+## Stack
 
-###  **Executar DBT (Após CDC configurado)**
-```bash
-python3 scripts/executar_dbt.py debug    # Testar conexão
-python3 scripts/executar_dbt.py bronze   # Modelos bronze
-python3 scripts/executar_dbt.py silver   # Modelos silver
-python3 scripts/executar_dbt.py gold     # Modelos gold
-python3 scripts/executar_dbt.py full     # Pipeline completo
-```
+| Componente | Tecnologia | Porta |
+|---|---|---|
+| Source DB | PostgreSQL 13 (WAL logical) | 5430 |
+| CDC Engine | Debezium 2.5 + Kafka Connect | 8083 |
+| Message Broker | Apache Kafka 7.5 | 9092 |
+| Target DB | PostgreSQL 13 | 5431 |
+| Transformações | dbt-postgres 1.9 | — |
+| Dashboard | Streamlit | 8501 |
+| Data Lake | MinIO (S3) | 9000/9001 |
 
-###  **Limpeza Completa (quando quiser resetar tudo)**
-```bash
-./clean_docker_environment.sh
-```
-** CUIDADO:** Remove TUDO - containers, volumes, dados, configurações!
+**RAM total: ~2GB** (vs ~6GB com Airbyte)
 
-## ��️ **Arquitetura**
+## Início Rápido
 
-### **Abordagem Híbrida: Docker + Python**
-- **Docker**: Apenas para infraestrutura (PostgreSQL, Airbyte, MinIO)
-- **Python**: Execução de lógica (DBT, verificações, criação de tabelas)
-- **Credenciais Padronizadas**: admin/admin para todos os serviços
-
-### **Fluxo de Dados**
-```
-1. PostgreSQL Source (dados originais)
-   ↓
-2. Airbyte CDC (Change Data Capture)
-   ↓
-3. PostgreSQL Target (dados replicados)
-   ↓
-4. DBT Python (transformações)
-   ↓
-5. Dashboard Streamlit
-```
-
-##  **Estrutura de Dados**
-
-### **Tabelas Principais:**
-- **clientes** - Dados de clientes com perfil empresarial
-- **pedidos** - Pedidos sem itens (estrutura empresarial)
-- **produtos** - Catálogo de produtos e-commerce
-- **itens_pedido** - Relacionamento produtos↔pedidos
-- **campanhas_marketing** - Campanhas de marketing
-- **leads** - Leads gerados pelas campanhas
-
-### **Camadas DBT:**
-- ** Bronze** - Dados brutos replicados via Airbyte
-- ** Silver** - Dados limpos e padronizados
-- ** Gold** - Agregações e métricas de negócio
-
-##  **URLs dos Serviços**
-
-| Serviço | URL | Credenciais |
-|---------|-----|-------------|
-| **Airbyte UI** | http://localhost:8080 | admin/admin |
-| **MinIO Console** | http://localhost:9001 | admin/admin |
-| **PostgreSQL Source** | localhost:5430 | admin/admin |
-| **PostgreSQL Target** | localhost:5431 | admin/admin |
-| **E-commerce API** | http://localhost:8010 | - |
-| **CRM API** | http://localhost:8011 | - |
-
-##  **Comandos Úteis**
-
-### **Verificar Status**
-```bash
-cd config && docker compose ps
-```
-
-### **Logs dos Serviços**
+### 1. Subir o stack
 ```bash
 cd config
-docker compose logs postgres_source
-docker compose logs airbyte-server
-docker compose logs dbt_runner
+docker-compose up -d
 ```
 
-### **Testar Conexões**
+### 2. Registrar o conector Debezium
 ```bash
-# PostgreSQL Source
+bash config/init_debezium.sh
+```
+
+> Aguarda Kafka Connect, cria o replication slot + publication no PostgreSQL e registra o conector via REST. Idempotente.
+
+### 3. Iniciar o loop de demo
+```bash
+# Gera dados fake + executa dbt a cada 15s
+python3 scripts/pipeline_demo_loop.py 15
+```
+
+### 4. Abrir o dashboard
+```bash
+streamlit run scripts/dashboard.py
+# Acesse: http://localhost:8501
+```
+
+## Estrutura
+
+```
+kafka-debezium-dbt/
+├── config/
+│   ├── docker-compose.yml          # Stack completa (Kafka + dbt + Postgres)
+│   ├── debezium-connector.json     # Configuração do conector Debezium
+│   └── init_debezium.sh            # Script de inicialização do conector
+├── postgres_init_scripts/          # Schema do db_source
+├── postgres_target_init/           # Schema do db_target (sem metadados Airbyte)
+├── dbt_project/                    # Modelos dbt
+│   └── models/
+│       ├── bronze/                 # Dados brutos replicados
+│       ├── silver/                 # Dados limpos e padronizados
+│       └── gold/                   # Agregações e métricas
+├── dbt_profiles/
+│   └── profiles.yml
+├── scripts/
+│   ├── kafka_consumer.py           # Consumer CDC → db_target (UPSERT)
+│   ├── gerar_dados_continuos.py    # Gerador de dados fake
+│   ├── pipeline_demo_loop.py       # Orquestrador da demo
+│   └── dashboard.py                # Dashboard Streamlit
+└── apis_simuladas/                 # APIs FastAPI de fontes externas
+```
+
+## Camadas dbt
+
+| Camada | Schema | Descrição |
+|---|---|---|
+| Bronze | `public_bronze` | Dados brutos do CDC |
+| Silver | `public_silver` | Dados normalizados |
+| Gold | `public_gold` | Métricas e agregações |
+
+## Comandos Úteis
+
+```bash
+# Status dos containers
+cd config && docker-compose ps
+
+# Logs do consumer Kafka
+docker logs kafka_consumer -f
+
+# Status do conector Debezium
+curl http://localhost:8083/connectors/postgres-source-connector/status | python3 -m json.tool
+
+# Executar dbt manualmente
+docker exec dbt_runner_container bash -c \
+  "cd /usr/app/dbt_project && dbt run --profiles-dir /root/.dbt --vars '{source_database: db_target}'"
+
+# Conectar ao Source
 psql -h localhost -p 5430 -U admin -d db_source
 
-# PostgreSQL Target  
+# Conectar ao Target
 psql -h localhost -p 5431 -U admin -d db_target
 
-# DBT Debug
-cd config && docker compose exec dbt_runner dbt debug
+# Parar tudo
+cd config && docker-compose down --remove-orphans
 ```
 
-### **Parar Tudo**
-```bash
-cd config && docker compose down --remove-orphans
-```
+## Credenciais
 
-##  **Estrutura do Projeto**
+Todos os serviços: `admin / admin`
 
-```
-├── start_pipeline.sh              #  Script principal
-├── config/
-│   ├── env.config                 # Variáveis centralizadas
-│   ├── docker-compose.yml         # Configuração completa
-│   ├── load_env.sh               # Helper para variáveis
-│   └── README_CREDENCIAIS.md     # Documentação de credenciais
-├── postgres_init_scripts/
-│   └── init_source_db.sql        # Schema do banco source
-├── dbt_project/                  # Projeto DBT
-│   ├── models/
-│   │   ├── bronze/              # Camada Bronze
-│   │   ├── silver/              # Camada Silver
-│   │   └── gold/                # Camada Gold
-│   └── dbt_project.yml
-├── dbt_profiles/
-│   └── profiles.yml             # Configuração DBT
-└── apis_simuladas/              # APIs de dados externos
-```
+## Fluxo de Tipos Debezium → PostgreSQL
 
-##  **Troubleshooting**
-
-### **Problema: "role admin does not exist"**
-```bash
-cd config && docker compose down --volumes
-docker system prune -f
-./start_pipeline.sh
-```
-
-### **Problema: DBT não encontra tabelas**
-1. Verifique se Airbyte replicou os dados:
-```bash
-cd config
-docker compose exec postgres_target psql -U admin -d db_target -c "SELECT COUNT(*) FROM clientes;"
-```
-
-2. Se retornar erro, configure Airbyte primeiro
-
-### **Problema: Portas ocupadas**
-```bash
-# Verificar portas em uso
-lsof -i :5430 -i :5431 -i :8001 -i :8080 -i :9001
-
-# Matar processos se necessário
-killall postgres
-docker compose down --remove-orphans
-```
-
-##  **Fluxo CDC Completo**
-
-1. ** APIs inserem dados** → PostgreSQL Source
-2. ** Airbyte captura CDC** → Replica para Target  
-3. ** DBT processa** → Bronze → Silver → Gold
-4. ** Dashboard consome** → Dados transformados
-
-##  **Próximos Passos**
-
-1. Execute `./start_pipeline.sh`
-2. Configure Airbyte CDC no browser  
-3. Aguarde dados serem replicados
-4. Execute transformações DBT
-5. Monitore pipeline em tempo real
+| Tipo Debezium | Formato | Conversão |
+|---|---|---|
+| `DATE` | `int32` (epoch days) | `date(1970,1,1) + timedelta(days=v)` |
+| `TIMESTAMP` | `int64` (epoch microseconds) | `datetime.utcfromtimestamp(v/1_000_000)` |
+| `JSONB` | `dict` | `json.dumps(v)` |
+| `GENERATED` columns | Presente no payload | Excluído do INSERT |
 
 ---
 
-** Pipeline CDC pronto para produção com credenciais admin/admin!**
+Credenciais padrão: `admin/admin` | Latência CDC: < 1s

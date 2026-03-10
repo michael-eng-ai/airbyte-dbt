@@ -1,0 +1,30 @@
+{
+    "name": "postgres-source-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "database.hostname": "postgres_source_db",
+        "database.port": "5432",
+        "database.user": "admin",
+        "database.password": "admin",
+        "database.dbname": "db_source",
+        "database.server.name": "dbserver1",
+        "topic.prefix": "dbserver1",
+        "slot.name": "debezium_slot",
+        "publication.name": "debezium_publication",
+        "plugin.name": "pgoutput",
+        "table.include.list": "public.clientes,public.pedidos,public.produtos,public.leads",
+        "decimal.handling.mode": "double",
+        "time.precision.mode": "connect",
+        "snapshot.mode": "initial",
+        "snapshot.isolation.mode": "read_committed",
+        "heartbeat.interval.ms": "5000",
+        "max.batch.size": "2048",
+        "poll.interval.ms": "1000",
+        "tombstones.on.delete": "false",
+        "transforms": "unwrap",
+        "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+        "transforms.unwrap.drop.tombstones": "true",
+        "transforms.unwrap.delete.handling.mode": "rewrite",
+        "transforms.unwrap.add.fields": "op,table,lsn,source.ts_ms"
+    }
+}

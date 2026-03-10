@@ -1,313 +1,200 @@
 #!/usr/bin/env python3
 """
-Dashboard em Tempo Real - Pipeline de Dados
-Mostra métricas e gráficos atualizados automaticamente
+Dashboard em Tempo Real - Pipeline Kafka + dbt
+Mostra dados chegando em tempo real via Kafka CDC
 """
 
 import streamlit as st
 import psycopg2
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 
-# Configuração da página
 st.set_page_config(
-    page_title="Pipeline de Dados - Dashboard",
-    page_icon="",
+    page_title="Kafka + dbt Pipeline — Dashboard",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Configurações de conexão
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 5430,
-    'database': 'db_source',
-    'user': 'admin',
-    'password': 'admin'
-}
+st.markdown("""
+<style>
+    .stMetric label { color: #8ecdf5 !important; font-size: 14px !important; }
+    .stMetric [data-testid="stMetricValue"] { font-size: 28px !important; font-weight: 700; }
+    .stMetric [data-testid="stMetricDelta"] { color: #00ff9d !important; }
+</style>
+""", unsafe_allow_html=True)
 
-@st.cache_data(ttl=5)  # Cache por 5 segundos
-def conectar_e_consultar(query):
-    """Conecta ao banco e executa query com cache"""
+DB_SOURCE = dict(host='localhost', port=5430, database='db_source', user='admin', password='admin')
+DB_TARGET = dict(host='localhost', port=5431, database='db_target', user='admin', password='admin')
+
+
+@st.cache_data(ttl=3)
+def query(sql, cfg=None):
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        return df
+        with psycopg2.connect(**(cfg or DB_TARGET)) as conn:
+            return pd.read_sql_query(sql, conn)
     except Exception as e:
-        st.error(f"Erro ao conectar ao banco: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame({"Erro": [str(e)]})
 
-def main():
-    # Header
-    st.title(" Pipeline de Dados - Dashboard em Tempo Real")
-    st.markdown("** Demonstração de CDC e Transformações DBT**")
-    
-    # Sidebar com controles
-    st.sidebar.header(" Configurações")
-    auto_refresh = st.sidebar.checkbox(" Auto-refresh (5s)", value=True)
-    
-    if auto_refresh:
-        # Auto-refresh usando rerun
-        time.sleep(5)
-        st.rerun()
-    
-    # ====== MÉTRICAS PRINCIPAIS ======
-    st.header("📈 Métricas Principais")
-    
-    # Consulta para métricas
-    query_metricas = """
-    SELECT 
-        (SELECT COUNT(*) FROM public.clientes) as total_clientes,
-        (SELECT COUNT(*) FROM public.pedidos) as total_pedidos,
-        (SELECT COALESCE(SUM(quantidade * preco_unitario), 0) FROM public.pedidos) as receita_total,
-        (SELECT COALESCE(AVG(quantidade * preco_unitario), 0) FROM public.pedidos) as ticket_medio
-    """
-    
-    df_metricas = conectar_e_consultar(query_metricas)
-    
-    if not df_metricas.empty:
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.metric(
-                label="👥 Total Clientes",
-                value=int(df_metricas['total_clientes'].iloc[0]),
-                delta=None
-            )
-        
-        with col2:
-            st.metric(
-                label=" Total Pedidos", 
-                value=int(df_metricas['total_pedidos'].iloc[0]),
-                delta=None
-            )
-        
-        with col3:
-            st.metric(
-                label="💰 Receita Total",
-                value=f"R$ {df_metricas['receita_total'].iloc[0]:,.2f}",
-                delta=None
-            )
-        
-        with col4:
-            st.metric(
-                label=" Ticket Médio",
-                value=f"R$ {df_metricas['ticket_medio'].iloc[0]:,.2f}",
-                delta=None
-            )
 
-    # ====== GRÁFICOS ======
-    st.header(" Análises Visuais")
-    
-    # Row 1: Vendas por Cliente e por Produto
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("🏆 Top 10 Clientes por Receita")
-        query_top_clientes = """
-        SELECT 
-            c.nome,
-            COUNT(p.id) as total_pedidos,
-            SUM(p.quantidade * p.preco_unitario) as receita_total
-        FROM public.clientes c
-        LEFT JOIN public.pedidos p ON c.id = p.cliente_id
-        GROUP BY c.id, c.nome
-        HAVING SUM(p.quantidade * p.preco_unitario) IS NOT NULL
-        ORDER BY receita_total DESC
-        LIMIT 10
-        """
-        
-        df_top_clientes = conectar_e_consultar(query_top_clientes)
-        
-        if not df_top_clientes.empty:
-            fig_clientes = px.bar(
-                df_top_clientes,
-                x='receita_total',
-                y='nome',
-                orientation='h',
-                title="Receita por Cliente",
-                labels={'receita_total': 'Receita (R$)', 'nome': 'Cliente'}
-            )
-            fig_clientes.update_layout(height=400)
-            st.plotly_chart(fig_clientes, use_container_width=True)
-        else:
-            st.info("Aguardando dados de clientes...")
-    
-    with col2:
-        st.subheader("📦 Top 10 Produtos por Vendas")
-        query_top_produtos = """
-        SELECT 
-            produto,
-            COUNT(*) as total_vendas,
-            SUM(quantidade) as quantidade_total,
-            SUM(quantidade * preco_unitario) as receita_total
-        FROM public.pedidos
-        GROUP BY produto
-        ORDER BY receita_total DESC
-        LIMIT 10
-        """
-        
-        df_top_produtos = conectar_e_consultar(query_top_produtos)
-        
-        if not df_top_produtos.empty:
-            fig_produtos = px.pie(
-                df_top_produtos,
-                values='receita_total',
-                names='produto',
-                title="Receita por Produto"
-            )
-            fig_produtos.update_layout(height=400)
-            st.plotly_chart(fig_produtos, use_container_width=True)
-        else:
-            st.info("Aguardando dados de produtos...")
-    
-    # Row 2: Evolução Temporal
-    st.subheader("📈 Evolução de Vendas (Últimos 7 dias)")
-    
-    query_evolucao = """
-    SELECT 
-        DATE(data_pedido) as data,
-        COUNT(*) as pedidos_do_dia,
-        SUM(quantidade * preco_unitario) as receita_do_dia
-    FROM public.pedidos
-    WHERE data_pedido >= CURRENT_DATE - INTERVAL '7 days'
-    GROUP BY DATE(data_pedido)
-    ORDER BY data
-    """
-    
-    df_evolucao = conectar_e_consultar(query_evolucao)
-    
-    if not df_evolucao.empty:
-        # Duas métricas em gráfico de linha
-        fig_evolucao = go.Figure()
-        
-        # Pedidos (eixo Y esquerdo)
-        fig_evolucao.add_trace(
-            go.Scatter(
-                x=df_evolucao['data'],
-                y=df_evolucao['pedidos_do_dia'],
-                name='Pedidos',
-                line=dict(color='blue'),
-                yaxis='y'
-            )
-        )
-        
-        # Receita (eixo Y direito)
-        fig_evolucao.add_trace(
-            go.Scatter(
-                x=df_evolucao['data'],
-                y=df_evolucao['receita_do_dia'],
-                name='Receita (R$)',
-                line=dict(color='green'),
-                yaxis='y2'
-            )
-        )
-        
-        # Layout com dois eixos Y
-        fig_evolucao.update_layout(
-            title="Evolução de Pedidos e Receita",
-            xaxis=dict(title="Data"),
-            yaxis=dict(title="Número de Pedidos", side="left"),
-            yaxis2=dict(title="Receita (R$)", side="right", overlaying="y"),
-            height=400
-        )
-        
-        st.plotly_chart(fig_evolucao, use_container_width=True)
+# ── Header ────────────────────────────────────────────────────────────────────
+st.title("⚡ Kafka + dbt — Dashboard em Tempo Real")
+st.caption(f"Atualizado: {datetime.now().strftime('%H:%M:%S')} | CDC: PostgreSQL → Debezium → Kafka → Consumer → dbt")
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.header("⚙️ Controles")
+    auto_refresh = st.checkbox("Auto-refresh (5s)", value=True)
+    st.divider()
+    st.subheader("📡 Conexões")
+    for name, cfg in [("Source :5430", DB_SOURCE), ("Target :5431", DB_TARGET)]:
+        try:
+            with psycopg2.connect(**cfg, connect_timeout=2):
+                st.success(f"✅ {name}")
+        except Exception as e:
+            st.error(f"❌ {name}: {str(e)[:40]}")
+
+    st.divider()
+    st.subheader("🔧 Kafka Consumer")
+    kafka_meta = query("SELECT topic, event_count, last_event FROM public._pipeline_metadata ORDER BY event_count DESC")
+    if 'Erro' not in kafka_meta.columns and not kafka_meta.empty:
+        st.dataframe(kafka_meta, hide_index=True, use_container_width=True)
     else:
-        st.info("Aguardando dados de evolução temporal...")
-    
-    # ====== DADOS RECENTES ======
-    st.header("🔥 Atividade Recente")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("👥 Últimos Clientes")
-        query_ultimos_clientes = """
-        SELECT nome, email, data_cadastro
-        FROM public.clientes
-        ORDER BY id DESC
-        LIMIT 5
-        """
-        
-        df_ultimos_clientes = conectar_e_consultar(query_ultimos_clientes)
-        if not df_ultimos_clientes.empty:
-            st.dataframe(df_ultimos_clientes, use_container_width=True)
-        else:
-            st.info("Nenhum cliente encontrado")
-    
-    with col2:
-        st.subheader(" Últimos Pedidos")
-        query_ultimos_pedidos = """
-        SELECT 
-            p.id,
-            c.nome,
-            p.produto,
-            p.quantidade,
-            (p.quantidade * p.preco_unitario) as valor_total,
-            p.data_pedido
-        FROM public.pedidos p
-        JOIN public.clientes c ON p.cliente_id = c.id
-        ORDER BY p.id DESC
-        LIMIT 5
-        """
-        
-        df_ultimos_pedidos = conectar_e_consultar(query_ultimos_pedidos)
-        if not df_ultimos_pedidos.empty:
-            # Formatar valor
-            df_ultimos_pedidos['valor_total'] = df_ultimos_pedidos['valor_total'].apply(lambda x: f"R$ {x:.2f}")
-            st.dataframe(df_ultimos_pedidos, use_container_width=True)
-        else:
-            st.info("Nenhum pedido encontrado")
-    
-    # ====== STATUS DO PIPELINE ======
-    st.header(" Status do Pipeline DBT")
-    
-    # Verificar se as tabelas DBT existem
-    query_pipeline_status = """
-    SELECT 
-        'bronze_clientes' as tabela,
-        COUNT(*) as registros
-    FROM public_bronze.bronze_clientes
-    UNION ALL
-    SELECT 
-        'bronze_pedidos',
-        COUNT(*)
-    FROM public_bronze.bronze_pedidos
-    UNION ALL
-    SELECT 
-        'silver_clientes',
-        COUNT(*)
-    FROM public_silver.dim_clientes
-    UNION ALL
-    SELECT 
-        'silver_pedidos',
-        COUNT(*)
-    FROM public_silver.fct_pedidos
-    """
-    
-    df_pipeline = conectar_e_consultar(query_pipeline_status)
-    
-    if not df_pipeline.empty:
-        col1, col2, col3, col4 = st.columns(4)
-        
-        for i, (col, row) in enumerate(zip([col1, col2, col3, col4], df_pipeline.itertuples())):
-            with col:
-                camada = "🟤 Bronze" if "bronze" in row.tabela else " Silver"
-                st.metric(
-                    label=f"{camada}",
-                    value=f"{row.registros} registros",
-                    delta=None
-                )
-    
-    # Footer
-    st.markdown("---")
-    st.markdown(f"🕐 Última atualização: {datetime.now().strftime('%H:%M:%S')}")
-    st.markdown("💡 **Dica**: Os dados são atualizados automaticamente a cada 5 segundos")
+        st.info("Aguardando primeiro evento CDC...")
 
-if __name__ == "__main__":
-    main() 
+# ── KPIs ───────────────────────────────────────────────────────────────────────
+st.header("📈 Métricas Principais")
+col1, col2, col3, col4 = st.columns(4)
+
+src_c = query("SELECT COUNT(*) n FROM public.clientes", DB_SOURCE)
+src_p = query("SELECT COUNT(*) n FROM public.pedidos", DB_SOURCE)
+tgt_c = query("SELECT COUNT(*) n FROM public.clientes")
+tgt_p = query("SELECT COUNT(*) n FROM public.pedidos")
+rec   = query("SELECT COALESCE(SUM(valor_bruto),0) t FROM public.pedidos")
+tick  = query("SELECT COALESCE(AVG(valor_liquido),0) t FROM public.pedidos")
+
+n_sc = int(src_c['n'].iloc[0]) if 'n' in src_c else 0
+n_sp = int(src_p['n'].iloc[0]) if 'n' in src_p else 0
+n_tc = int(tgt_c['n'].iloc[0]) if 'n' in tgt_c else 0
+n_tp = int(tgt_p['n'].iloc[0]) if 'n' in tgt_p else 0
+receita = float(rec['t'].iloc[0]) if 't' in rec else 0
+ticket  = float(tick['t'].iloc[0]) if 't' in tick else 0
+
+with col1:
+    st.metric("👥 Clientes", n_sc, delta=f"→ {n_tc} Target")
+with col2:
+    st.metric("🛒 Pedidos", n_sp, delta=f"→ {n_tp} Target")
+with col3:
+    st.metric("💰 Receita Total", f"R$ {receita:,.2f}")
+with col4:
+    st.metric("🎟️ Ticket Médio", f"R$ {ticket:,.2f}")
+
+st.divider()
+
+# ── Lag Kafka ──────────────────────────────────────────────────────────────────
+st.header("⚡ Lag Kafka (Source vs Target)")
+lag_c = n_sc - n_tc
+lag_p = n_sp - n_tp
+
+col_chart, col_lag = st.columns([2, 1])
+with col_chart:
+    lag_df = pd.DataFrame({
+        "Tabela": ["clientes", "pedidos"],
+        "Source": [n_sc, n_sp],
+        "Target (Kafka)": [n_tc, n_tp],
+    })
+    fig = px.bar(
+        lag_df.melt(id_vars="Tabela", var_name="Camada", value_name="Registros"),
+        x="Tabela", y="Registros", color="Camada", barmode="group",
+        color_discrete_map={"Source": "#00d4ff", "Target (Kafka)": "#00ff9d"},
+        title="Registros por Camada"
+    )
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(14,28,54,0.8)',
+                      font_color='white', title_font_color='white')
+    st.plotly_chart(fig, use_container_width=True)
+
+with col_lag:
+    st.metric("Lag clientes", f"{lag_c:+d} rows", delta_color="inverse")
+    st.metric("Lag pedidos",  f"{lag_p:+d} rows", delta_color="inverse")
+    if lag_c == 0 and lag_p == 0:
+        st.success("⚡ Kafka em dia!")
+    elif lag_c + lag_p < 10:
+        st.info(f"⏳ {lag_c + lag_p} rows replicando...")
+    else:
+        st.warning(f"🔄 {lag_c + lag_p} rows na fila Kafka")
+
+st.divider()
+
+# ── Tabelas replicadas ──────────────────────────────────────────────────────────
+col_l, col_r = st.columns(2)
+
+with col_l:
+    st.subheader("👥 Últimos Clientes (Target)")
+    df_c = query("""
+        SELECT nome, email, tipo_cliente, status,
+               TO_CHAR(data_cadastro, 'DD/MM HH24:MI') as cadastro,
+               TO_CHAR(updated_at, 'HH24:MI:SS') as updated
+        FROM public.clientes ORDER BY updated_at DESC NULLS LAST LIMIT 10
+    """)
+    if 'Erro' in df_c.columns or df_c.empty:
+        st.info("Aguardando dados do Kafka consumer...")
+    else:
+        st.dataframe(df_c, use_container_width=True, hide_index=True)
+
+with col_r:
+    st.subheader("🛒 Últimos Pedidos (Target)")
+    df_p = query("""
+        SELECT numero_pedido, status, metodo_pagamento,
+               CAST(valor_bruto AS FLOAT)::NUMERIC(10,2) as valor_bruto,
+               CAST(valor_liquido AS FLOAT)::NUMERIC(10,2) as valor_liq,
+               canal_venda,
+               TO_CHAR(updated_at, 'HH24:MI:SS') as updated
+        FROM public.pedidos ORDER BY updated_at DESC NULLS LAST LIMIT 10
+    """)
+    if 'Erro' in df_p.columns or df_p.empty:
+        st.info("Aguardando dados do Kafka consumer...")
+    else:
+        st.dataframe(df_p, use_container_width=True, hide_index=True)
+
+st.divider()
+
+# ── Gold Layer dbt ──────────────────────────────────────────────────────────────
+st.header("✨ Gold Layer (dbt)")
+col_g1, col_g2 = st.columns(2)
+
+with col_g1:
+    st.subheader("🏆 Top Clientes por Receita")
+    gold = query("""
+        SELECT nome, total_pedidos, receita_total::FLOAT as receita
+        FROM public_gold.gold_visao_geral_clientes ORDER BY receita DESC LIMIT 10
+    """)
+    if 'Erro' in gold.columns or gold.empty:
+        st.info("Execute `dbt run` para popular a Gold layer.")
+    else:
+        fig2 = px.bar(gold, x='receita', y='nome', orientation='h',
+                      color='receita', color_continuous_scale='Blues',
+                      title="Receita por Cliente (Gold)")
+        fig2.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(14,28,54,0.8)',
+                           font_color='white', yaxis={'categoryorder': 'total ascending'})
+        st.plotly_chart(fig2, use_container_width=True)
+
+with col_g2:
+    st.subheader("📊 Receita por Status")
+    df_s = query("""
+        SELECT status, COUNT(*) n, SUM(valor_bruto::FLOAT) receita
+        FROM public.pedidos GROUP BY status ORDER BY receita DESC
+    """)
+    if 'Erro' in df_s.columns or df_s.empty:
+        st.info("Sem dados de pedidos ainda.")
+    else:
+        fig3 = px.pie(df_s, values='receita', names='status',
+                      color_discrete_sequence=px.colors.sequential.Blues_r,
+                      title="Distribuição por Status")
+        fig3.update_layout(paper_bgcolor='rgba(0,0,0,0)', font_color='white')
+        st.plotly_chart(fig3, use_container_width=True)
+
+if auto_refresh:
+    time.sleep(5)
+    st.rerun()
